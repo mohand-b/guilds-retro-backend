@@ -6,6 +6,7 @@ import { GuildsService } from '../guilds/guilds.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
+import { GuildDto } from '../guilds/dto/guild.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
 
   async register(createUserDto: CreateUserDto): Promise<{
     user: UserDto;
+    guild: Omit<GuildDto, 'members'>;
     accessToken: string;
   }> {
     const { password, guildName, guildId, ...userData } = createUserDto;
@@ -42,11 +44,12 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id };
     const accessToken = this.jwtService.sign(payload);
 
-    const userDto: UserDto = {
-      ...user,
-      guild,
+    const guildDto: Omit<GuildDto, 'members'> = {
+      id: guild.id,
+      name: guild.name,
+      description: guild.description,
     };
 
-    return { user: userDto, accessToken };
+    return { user, guild: guildDto, accessToken };
   }
 }

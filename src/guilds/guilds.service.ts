@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Guild } from './entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,12 +23,31 @@ export class GuildsService {
   }
 
   async findOne(id: number): Promise<Guild> {
-    return this.guildsRepository.findOneBy({ id });
+    return this.guildsRepository.findOne({
+      where: { id: id },
+      relations: ['allies'],
+    });
   }
 
   async findAll(): Promise<Guild[]> {
     return this.guildsRepository.find({
-      relations: ['members'],
+      relations: ['members', 'allies'],
     });
+  }
+
+  async addAlly(guildId: number, allyGuildId: number): Promise<void> {
+    const guild = await this.guildsRepository.findOne({
+      where: { id: guildId },
+      relations: ['allies'],
+    });
+
+    const allyGuild = await this.findOne(allyGuildId);
+
+    if (!guild || !allyGuild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    guild.allies.push(allyGuild);
+    await this.guildsRepository.save(guild);
   }
 }

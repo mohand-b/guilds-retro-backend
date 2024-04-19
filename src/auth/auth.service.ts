@@ -24,15 +24,15 @@ export class AuthService {
     const { password, guildName, guildId, ...userData } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let user = await this.usersService.create({
+    const user = await this.usersService.create({
       ...userData,
       password: hashedPassword,
     });
 
     let guild = null;
     if (guildName) {
-      user = await this.usersService.save({ ...user, role: UserRole.LEADER });
-
+      await this.usersService.save({ ...user, role: UserRole.LEADER });
+      user.role = UserRole.LEADER;
       guild = await this.guildsService.create({ name: guildName }, user);
     } else if (guildId) {
       guild = await this.guildsService.findOne(guildId);

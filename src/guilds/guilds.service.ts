@@ -12,15 +12,14 @@ export class GuildsService {
     private guildsRepository: Repository<Guild>,
   ) {}
 
-  async create(createGuildDto: CreateGuildDto, leader: User): Promise<Guild> {
-    const newGuild = this.guildsRepository.create({
+  async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
+    const guild = this.guildsRepository.create({
       ...createGuildDto,
-      leader,
-      members: [leader],
+      members: [creator],
     });
 
-    await this.guildsRepository.save(newGuild);
-    return newGuild;
+    await this.guildsRepository.save(guild);
+    return guild;
   }
 
   async findOne(id: number): Promise<Guild> {
@@ -29,7 +28,7 @@ export class GuildsService {
 
   async findAll(): Promise<Guild[]> {
     return this.guildsRepository.find({
-      relations: ['members', 'leader'],
+      relations: ['members'],
     });
   }
 }

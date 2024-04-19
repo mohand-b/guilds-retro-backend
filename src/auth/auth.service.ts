@@ -5,6 +5,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { GuildsService } from '../guilds/guilds.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Injectable()
 export class AuthService {
@@ -21,13 +22,15 @@ export class AuthService {
     const { password, guildName, guildId, ...userData } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await this.usersService.create({
+    let user = await this.usersService.create({
       ...userData,
       password: hashedPassword,
     });
 
     let guild = null;
     if (guildName) {
+      user = await this.usersService.updateUserRole(user.id, UserRole.LEADER);
+
       guild = await this.guildsService.create({ name: guildName }, user);
     } else if (guildId) {
       guild = await this.guildsService.findOne(guildId);
@@ -36,15 +39,13 @@ export class AuthService {
       }
     }
 
-    const userDto: UserDto = {
-      id: user.id,
-      username: user.username,
-      characterClass: user.characterClass,
-      guild: guild,
-    };
-
     const payload = { username: user.username, sub: user.id };
     const accessToken = this.jwtService.sign(payload);
+
+    const userDto: UserDto = {
+      ...user,
+      guild,
+    };
 
     return { user: userDto, accessToken };
   }

@@ -1,9 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserRole } from './enum/user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -13,13 +12,32 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const newUser = this.usersRepository.create(createUserDto);
-    await this.usersRepository.save(newUser);
-    return newUser;
+    const { username } = createUserDto;
+    const existingUser = await this.usersRepository.findOne({
+      where: { username },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Username is already taken.');
+    }
+
+    const user = this.usersRepository.create(createUserDto);
+    return await this.usersRepository.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
+  async save(user: User): Promise<User> {
+    return await this.usersRepository.save(user);
+  }
+
+  async findAll(): Promise<any[]> {
+    const users = await this.usersRepository.find({ relations: ['guild'] });
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      characterClass: user.characterClass,
+      guildId: user.guild ? user.guild.id : null,
+      role: user.role,
+    }));
   }
 
   async findOneById(id: number): Promise<User> {
@@ -28,17 +46,5 @@ export class UsersService {
 
   async findOneByUsername(username: string): Promise<User> {
     return this.usersRepository.findOneBy({ username });
-  }
-
-  async updateUserRole(userId: number, newRole: UserRole): Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id: userId });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    user.role = newRole;
-    await this.usersRepository.save(user);
-    return user;
   }
 }

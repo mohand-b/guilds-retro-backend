@@ -31,11 +31,12 @@ export class AuthService {
 
     let guild = null;
     if (guildName) {
-      user = await this.usersService.updateUserRole(user.id, UserRole.LEADER);
+      user = await this.usersService.save({ ...user, role: UserRole.LEADER });
 
       guild = await this.guildsService.create({ name: guildName }, user);
     } else if (guildId) {
       guild = await this.guildsService.findOne(guildId);
+      await this.usersService.save({ ...user, guild });
       if (!guild) {
         throw new Error('Guild not found');
       }

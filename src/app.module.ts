@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { GuildModule } from './guild/guild.module';
-import { UserModule } from './user/user.module';
-import { EventModule } from './event/event.module';
-import { AllianceModule } from './alliance/alliance.module';
+import { GuildsModule } from './guilds/guilds.module';
+import { UsersModule } from './users/users.module';
+import { EventsModule } from './events/events.module';
+import { AlliancesModule } from './alliances/alliances.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,14 +24,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         username: config.get<string>('DATABASE_USERNAME'),
         password: config.get<string>('DATABASE_PASSWORD'),
         database: config.get<string>('DATABASE_NAME'),
-        synchronize: false,
+        synchronize: true,
+        autoLoadEntities: true,
       }),
       inject: [ConfigService],
     }),
-    GuildModule,
-    UserModule,
-    EventModule,
-    AllianceModule,
+    GuildsModule,
+    UsersModule,
+    EventsModule,
+    AlliancesModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

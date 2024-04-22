@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildDto } from '../guilds/dto/guild.dto';
+import { Guild } from '../guilds/entities/guild.entity';
 
 @Injectable()
 export class AuthService {
@@ -52,5 +53,29 @@ export class AuthService {
     };
 
     return { user, guild: guildDto, accessToken };
+  }
+
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.usersService.findOneByUsername(username);
+    if (user && (await bcrypt.compare(pass, user.password))) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async login(user: any): Promise<{
+    user: any;
+    guild: Omit<Guild, 'members'>;
+    accessToken: string;
+  }> {
+    const { password, guild, ...userInfo } = user;
+    const payload = { username: user.username, sub: user.id };
+    const accessToken = this.jwtService.sign(payload);
+    return {
+      user: userInfo,
+      guild: guild,
+      accessToken: accessToken,
+    };
   }
 }

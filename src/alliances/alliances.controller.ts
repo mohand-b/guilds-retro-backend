@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -42,5 +43,10 @@ export class AlliancesController {
     if (!alliance) {
       throw new NotFoundException(`Alliance request #${id} not found`);
     }
+  }
+
+  @Get('/pending/:guildId')
+  async getPendingRequests(@Param('guildId') guildId: number) {
+    return await this.alliancesService.getPendingAllianceRequests(guildId);
   }
 }

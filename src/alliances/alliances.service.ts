@@ -111,4 +111,19 @@ export class AlliancesService {
 
     return alliance;
   }
+
+  async getPendingAllianceRequests(guildId: number): Promise<Alliance[]> {
+    const pendingRequests = await this.allianceRepository.find({
+      where: { targetGuild: { id: guildId }, status: 'PENDING' },
+      relations: ['requesterGuild', 'targetGuild'],
+    });
+
+    if (!pendingRequests) {
+      throw new NotFoundException(
+        `No pending alliance requests found for guild with ID ${guildId}`,
+      );
+    }
+
+    return pendingRequests;
+  }
 }

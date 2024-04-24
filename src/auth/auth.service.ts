@@ -20,7 +20,7 @@ export class AuthService {
   async register(createUserDto: CreateUserDto): Promise<{
     user: UserDto;
     guild: Omit<GuildDto, 'members'>;
-    accessToken: string;
+    token: string;
   }> {
     const { password, guildName, guildId, ...userData } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -44,7 +44,7 @@ export class AuthService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload);
 
     const guildDto: Omit<GuildDto, 'members'> = {
       id: guild.id,
@@ -52,7 +52,7 @@ export class AuthService {
       description: guild.description,
     };
 
-    return { user, guild: guildDto, accessToken };
+    return { user, guild: guildDto, token };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -67,15 +67,15 @@ export class AuthService {
   async login(user: any): Promise<{
     user: any;
     guild: Omit<Guild, 'members'>;
-    accessToken: string;
+    token: string;
   }> {
     const { password, guild, ...userInfo } = user;
     const payload = { username: user.username, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload);
     return {
       user: userInfo,
       guild: guild,
-      accessToken: accessToken,
+      token: token,
     };
   }
 }

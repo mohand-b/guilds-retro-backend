@@ -8,6 +8,7 @@ import { EventsModule } from './events/events.module';
 import { AlliancesModule } from './alliances/alliances.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { MembershipRequestsModule } from './membership-requests/membership-requests.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AuthModule } from './auth/auth.module';
     EventsModule,
     AlliancesModule,
     AuthModule,
+    MembershipRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,12 +8,15 @@ import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildDto } from '../guilds/dto/guild.dto';
 import { Guild } from '../guilds/entities/guild.entity';
+import { MembershipRequestsService } from '../membership-requests/membership-requests.service';
+import { MembershipRequest } from '../membership-requests/entities/membership-request.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private guildsService: GuildsService,
+    private membershipRequestsService: MembershipRequestsService,
     private jwtService: JwtService,
   ) {}
 
@@ -21,6 +24,7 @@ export class AuthService {
     user: UserDto;
     guild: Omit<GuildDto, 'members'>;
     token: string;
+    request?: MembershipRequest;
   }> {
     const { password, guildName, guildId, ...userData } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -31,16 +35,21 @@ export class AuthService {
     });
 
     let guild = null;
+    let request = null;
+
     if (guildName) {
       await this.usersService.save({ ...user, role: UserRole.LEADER });
       user.role = UserRole.LEADER;
       guild = await this.guildsService.create({ name: guildName }, user);
     } else if (guildId) {
       guild = await this.guildsService.findOne(guildId);
-      await this.usersService.save({ ...user, guild });
       if (!guild) {
         throw new Error('Guild not found');
       }
+      request = await this.membershipRequestsService.createMembershipRequest(
+        user.id,
+        guildId,
+      );
     }
 
     const payload = { username: user.username, sub: user.id };
@@ -52,7 +61,7 @@ export class AuthService {
       description: guild.description,
     };
 
-    return { user, guild: guildDto, token };
+    return { user, guild: guildDto, token, request };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {

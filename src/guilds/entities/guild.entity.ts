@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Alliance } from '../../alliances/entities/alliance.entity';
+import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class Guild {
@@ -32,4 +34,11 @@ export class Guild {
   @ManyToMany(() => Guild)
   @JoinTable()
   allies: Guild[];
+
+  @OneToMany(
+    () => MembershipRequest,
+    (membershipRequest) => membershipRequest.guild,
+  )
+  @Exclude()
+  membershipRequests: MembershipRequest[];
 }

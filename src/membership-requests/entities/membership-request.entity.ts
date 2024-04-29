@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Guild } from '../../guilds/entities/guild.entity';
-import { RequestStatus } from '../enum/membership-status.enum';
+import { RequestStatus } from '../enum/request-status.enum';
 
 @Entity()
 export class MembershipRequest {

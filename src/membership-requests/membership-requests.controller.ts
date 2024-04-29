@@ -1,4 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { MembershipRequestsService } from './membership-requests.service';
 import { CreateMembershipRequestDto } from './dto/create-membership-request.dto';
 
@@ -15,6 +22,22 @@ export class MembershipRequestsController {
     return await this.membershipRequestsService.createMembershipRequest(
       createMembershipRequestDto.userId,
       createMembershipRequestDto.guildId,
+    );
+  }
+
+  @Post(':requestId/accept')
+  @HttpCode(HttpStatus.OK)
+  async acceptRequest(@Param('requestId') requestId: number) {
+    return await this.membershipRequestsService.acceptMembershipRequest(
+      requestId,
+    );
+  }
+
+  @Post(':requestId/reject')
+  @HttpCode(HttpStatus.OK)
+  async rejectRequest(@Param('requestId') requestId: number) {
+    return await this.membershipRequestsService.rejectMembershipRequest(
+      requestId,
     );
   }
 }

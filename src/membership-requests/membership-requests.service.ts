@@ -4,11 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MembershipRequest } from './entities/membership-request.entity';
-import { RequestStatus } from './enum/membership-status.enum';
+import { RequestStatus } from './enum/request-status.enum';
 import { UsersService } from '../users/users.service';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Guild } from '../guilds/entities/guild.entity';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Injectable()
 export class MembershipRequestsService {
@@ -35,7 +36,7 @@ export class MembershipRequestsService {
 
     const guild = await this.guildsRepository.findOne({
       where: { id: guildId },
-      relations: ['membershipRequests', 'membershipRequests.user'], // Assurez-vous que les utilisateurs des demandes sont chargés
+      relations: ['membershipRequests', 'membershipRequests.user'],
     });
 
     if (!guild) {
@@ -43,7 +44,7 @@ export class MembershipRequestsService {
     }
 
     if (!guild.membershipRequests) {
-      guild.membershipRequests = []; // Initialisez le tableau s'il est indéfini
+      guild.membershipRequests = [];
     }
 
     const existingRequest = guild.membershipRequests.find(
@@ -60,5 +61,41 @@ export class MembershipRequestsService {
 
     await this.membershipRequestRepository.save(newRequest);
     return newRequest;
+  }
+
+  async acceptMembershipRequest(requestId: number): Promise<MembershipRequest> {
+    const request = await this.membershipRequestRepository.findOne({
+      where: { id: requestId },
+      relations: ['user', 'guild'],
+    });
+
+    if (!request) {
+      throw new NotFoundException('Membership request not found');
+    }
+
+    request.status = RequestStatus.APPROVED;
+    request.user.role = UserRole.MEMBER;
+    request.user.guild = request.guild;
+
+    await this.membershipRequestRepository.save(request);
+    await this.usersService.save(request.user);
+
+    return request;
+  }
+
+  async rejectMembershipRequest(requestId: number): Promise<MembershipRequest> {
+    const request = await this.membershipRequestRepository.findOne({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Membership request not found');
+    }
+
+    request.status = RequestStatus.REJECTED;
+
+    await this.membershipRequestRepository.save(request);
+
+    return request;
   }
 }

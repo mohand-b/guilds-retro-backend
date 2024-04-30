@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Guild } from '../../guilds/entities/guild.entity';
 import { CharacterClass } from '../enum/character-class.enum';
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { UserRole } from '../enum/user-role.enum';
 import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
 
@@ -38,6 +38,7 @@ export class User {
     enum: UserRole,
     default: UserRole.CANDIDATE,
   })
+  @Expose()
   role: UserRole;
 
   @OneToMany(

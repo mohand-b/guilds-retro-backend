@@ -98,4 +98,11 @@ export class MembershipRequestsService {
 
     return request;
   }
+
+  async findAllRequestsForGuild(guildId: number): Promise<MembershipRequest[]> {
+    return this.membershipRequestRepository.find({
+      where: { guild: { id: guildId } },
+      relations: ['user'],
+    });
+  }
 }

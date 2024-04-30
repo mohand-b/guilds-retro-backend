@@ -1,13 +1,20 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { MembershipRequestsService } from './membership-requests.service';
 import { CreateMembershipRequestDto } from './dto/create-membership-request.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Controller('membership-requests')
 export class MembershipRequestsController {
@@ -16,6 +23,7 @@ export class MembershipRequestsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async createRequest(
     @Body() createMembershipRequestDto: CreateMembershipRequestDto,
   ) {
@@ -26,6 +34,8 @@ export class MembershipRequestsController {
   }
 
   @Post(':requestId/accept')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OFFICER)
   @HttpCode(HttpStatus.OK)
   async acceptRequest(@Param('requestId') requestId: number) {
     return await this.membershipRequestsService.acceptMembershipRequest(
@@ -34,10 +44,21 @@ export class MembershipRequestsController {
   }
 
   @Post(':requestId/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OFFICER)
   @HttpCode(HttpStatus.OK)
   async rejectRequest(@Param('requestId') requestId: number) {
     return await this.membershipRequestsService.rejectMembershipRequest(
       requestId,
+    );
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OFFICER)
+  async findAllRequestsForGuild(@Query('guildId') guildId: number) {
+    return await this.membershipRequestsService.findAllRequestsForGuild(
+      Number(guildId),
     );
   }
 }

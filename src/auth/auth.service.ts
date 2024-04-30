@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserDto } from '../users/dto/user.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -52,7 +52,7 @@ export class AuthService {
       );
     }
 
-    const payload = { username: user.username, sub: user.id };
+    const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
 
     const guildDto: Omit<GuildDto, 'members'> = {
@@ -66,11 +66,17 @@ export class AuthService {
 
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.usersService.findOneByUsername(username);
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      const { password, ...result } = user;
-      return result;
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
-    return null;
+
+    const isMatch = await bcrypt.compare(pass, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const { password, ...userInfo } = user;
+    return userInfo;
   }
 
   async login(user: any): Promise<{
@@ -79,7 +85,7 @@ export class AuthService {
     token: string;
   }> {
     const { password, guild, ...userInfo } = user;
-    const payload = { username: user.username, sub: user.id };
+    const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
     return {
       user: userInfo,

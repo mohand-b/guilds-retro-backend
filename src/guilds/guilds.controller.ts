@@ -1,8 +1,18 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { GuildsService } from './guilds.service';
 import { Guild } from './entities/guild.entity';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Controller('guilds')
 export class GuildsController {
@@ -17,6 +27,8 @@ export class GuildsController {
   }
 
   @Get(':guildId/members')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   getGuildMembers(
     @Param('guildId', ParseIntPipe) guildId: number,
   ): Promise<User[]> {

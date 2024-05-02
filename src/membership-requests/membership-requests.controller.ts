@@ -56,8 +56,8 @@ export class MembershipRequestsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OFFICER)
-  async findAllRequestsForGuild(@Query('guildId') guildId: number) {
-    return await this.membershipRequestsService.findAllRequestsForGuild(
+  async findPendingRequestsForGuild(@Query('guildId') guildId: number) {
+    return await this.membershipRequestsService.findPendingRequestsForGuild(
       Number(guildId),
     );
   }

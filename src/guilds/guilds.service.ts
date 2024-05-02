@@ -9,34 +9,52 @@ import { User } from '../users/entities/user.entity';
 export class GuildsService {
   constructor(
     @InjectRepository(Guild)
-    private guildsRepository: Repository<Guild>,
+    private guildRepository: Repository<Guild>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
-    const guild = this.guildsRepository.create({
+    const guild = this.guildRepository.create({
       ...createGuildDto,
       members: [creator],
     });
 
-    await this.guildsRepository.save(guild);
+    await this.guildRepository.save(guild);
     return guild;
   }
 
   async findOne(id: number): Promise<Guild> {
-    return this.guildsRepository.findOne({
+    return this.guildRepository.findOne({
       where: { id: id },
       relations: ['allies'],
     });
   }
 
+  async findCurrentGuild(userId: number): Promise<Guild> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['guild'],
+    });
+
+    if (!user || !user.guild) {
+      throw new Error('User not found or user is not part of any guild');
+    }
+
+    return this.guildRepository.findOne({
+      where: { id: user.guild.id },
+      relations: ['members', 'allies'],
+    });
+  }
+
   async findAll(): Promise<Guild[]> {
-    return this.guildsRepository.find({
+    return this.guildRepository.find({
       relations: ['members', 'allies'],
     });
   }
 
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {
-    const guild = await this.guildsRepository.findOne({
+    const guild = await this.guildRepository.findOne({
       where: { id: guildId },
       relations: ['allies'],
     });
@@ -48,6 +66,6 @@ export class GuildsService {
     }
 
     guild.allies.push(allyGuild);
-    await this.guildsRepository.save(guild);
+    await this.guildRepository.save(guild);
   }
 }

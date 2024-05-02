@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { GuildsService } from './guilds.service';
@@ -33,5 +34,12 @@ export class GuildsController {
     @Param('guildId', ParseIntPipe) guildId: number,
   ): Promise<User[]> {
     return this.usersService.findMembersByGuild(guildId);
+  }
+
+  @Get('current')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  getCurrentGuild(@Req() req: any): Promise<Guild> {
+    return this.guildsService.findCurrentGuild(req.user.userId);
   }
 }

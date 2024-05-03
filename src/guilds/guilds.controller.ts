@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
+import { LightGuildDto } from './dto/guild.dto';
 
 @Controller('guilds')
 export class GuildsController {
@@ -41,5 +42,10 @@ export class GuildsController {
   @Roles(UserRole.CANDIDATE)
   getCurrentGuild(@Req() req: any): Promise<Guild> {
     return this.guildsService.findCurrentGuild(req.user.userId);
+  }
+
+  @Get('recruiting')
+  findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
+    return this.guildsService.findAllRecruitingGuilds();
   }
 }

@@ -50,7 +50,7 @@ export class MembershipRequestsService {
     const existingRequest = guild.membershipRequests.find(
       (request) => request.user && request.user.id === userId,
     );
-    if (existingRequest) {
+    if (existingRequest && existingRequest.status === RequestStatus.PENDING) {
       throw new BadRequestException('Membership request already exists');
     }
 

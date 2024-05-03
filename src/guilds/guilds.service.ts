@@ -4,6 +4,8 @@ import { Guild } from './entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { User } from '../users/entities/user.entity';
+import { LightGuildDto } from './dto/guild.dto';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Injectable()
 export class GuildsService {
@@ -38,7 +40,9 @@ export class GuildsService {
     });
 
     if (!user || !user.guild) {
-      throw new Error('User not found or user is not part of any guild');
+      throw new NotFoundException(
+        'User not found or user is not part of any guild',
+      );
     }
 
     return this.guildRepository.findOne({
@@ -51,6 +55,38 @@ export class GuildsService {
     return this.guildRepository.find({
       relations: ['members', 'allies'],
     });
+  }
+
+  async findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
+    const guilds: LightGuildDto[] = await this.guildRepository
+      .createQueryBuilder('guild')
+      .leftJoinAndSelect('guild.members', 'member')
+      .leftJoin('guild.members', 'leader', 'leader.role = :leaderRole', {
+        leaderRole: UserRole.LEADER,
+      })
+      .leftJoinAndSelect('guild.allies', 'ally')
+      .select([
+        'guild.id',
+        'guild.name',
+        'guild.description',
+        'leader.username AS leaderUsername',
+        'count(member.id) AS nbOfMembers',
+        'count(ally.id) AS nbOfAllies',
+      ])
+      .groupBy('guild.id')
+      .addGroupBy('leader.username')
+      .having('count(member.id) < guild.capacity')
+      .andHaving('guild.isRecruiting = :isRecruiting', { isRecruiting: true })
+      .getRawMany();
+
+    return guilds.map((guild) => ({
+      id: guild.id,
+      name: guild.name,
+      description: guild.description || '',
+      nbOfMembers: guild.nbOfMembers || 0,
+      nbOfAllies: guild.nbOfAllies || 0,
+      leaderUsername: guild.leaderUsername || 'N/A',
+    }));
   }
 
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {

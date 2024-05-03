@@ -41,4 +41,10 @@ export class Guild {
   )
   @Exclude()
   membershipRequests: MembershipRequest[];
+
+  @Column({ default: 100 })
+  capacity: number;
+
+  @Column({ default: true })
+  isRecruiting: boolean;
 }

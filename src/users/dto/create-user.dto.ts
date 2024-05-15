@@ -1,20 +1,22 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty } from 'class-validator';
 import { CharacterClass } from '../enum/character-class.enum';
+import { Gender } from '../enum/gender.enum';
 
 export class CreateUserDto {
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Username is required' })
   username: string;
 
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Password is required' })
   password: string;
 
+  @IsNotEmpty({ message: 'Character class is required' })
   @IsEnum(CharacterClass)
   characterClass: CharacterClass;
 
-  @IsOptional()
-  @IsString()
-  guildName?: string;
+  @IsNotEmpty({ message: 'Character level is required' })
+  characterLevel: number;
 
-  @IsOptional()
-  guildId?: number;
+  @IsNotEmpty({ message: 'Gender is required' })
+  @IsEnum(Gender)
+  gender: Gender;
 }

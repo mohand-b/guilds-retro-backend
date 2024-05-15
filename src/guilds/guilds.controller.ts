@@ -46,6 +46,6 @@ export class GuildsController {
 
   @Get('recruiting')
   findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
-    return this.guildsService.findAllRecruitingGuilds();
+    return this.guildsService.findRecruitingGuilds();
   }
 }

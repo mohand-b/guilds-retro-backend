@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { User } from '../users/entities/user.entity';
 import { LightGuildDto } from './dto/guild.dto';
-import { UserRole } from '../users/enum/user-role.enum';
+import { convertBufferToBase64 } from '../common/utils/image.utils';
 
 @Injectable()
 export class GuildsService {
@@ -17,8 +17,11 @@ export class GuildsService {
   ) {}
 
   async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
+    const logoBuffer: Buffer | null = createGuildDto.logo;
+
     const guild = this.guildRepository.create({
       ...createGuildDto,
+      logo: logoBuffer,
       members: [creator],
     });
 
@@ -57,36 +60,45 @@ export class GuildsService {
     });
   }
 
-  async findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
-    const guilds: LightGuildDto[] = await this.guildRepository
-      .createQueryBuilder('guild')
-      .leftJoinAndSelect('guild.members', 'member')
-      .leftJoin('guild.members', 'leader', 'leader.role = :leaderRole', {
-        leaderRole: UserRole.LEADER,
-      })
-      .leftJoinAndSelect('guild.allies', 'ally')
-      .select([
-        'guild.id',
-        'guild.name',
-        'guild.description',
-        'leader.username AS leaderUsername',
-        'count(member.id) AS nbOfMembers',
-        'count(ally.id) AS nbOfAllies',
-      ])
-      .groupBy('guild.id')
-      .addGroupBy('leader.username')
-      .having('count(member.id) < guild.capacity')
-      .andHaving('guild.isRecruiting = :isRecruiting', { isRecruiting: true })
-      .getRawMany();
+  async findRecruitingGuilds(): Promise<LightGuildDto[]> {
+    const guilds = await this.guildRepository.find({
+      where: { isRecruiting: true },
+      relations: ['members', 'allies'],
+    });
 
-    return guilds.map((guild) => ({
+    return guilds
+      .filter((guild) => guild.members.length <= guild.capacity)
+      .map((guild) => this.toLightGuildDto(guild));
+  }
+
+  private toLightGuildDto(guild: Guild): LightGuildDto {
+    const leader: User = guild.members.find(
+      (member) => member.role === 'Meneur',
+    );
+
+    const nbOfMembers: number = guild.members.length;
+    const averageLevelOfMembers: number =
+      nbOfMembers > 0
+        ? Math.round(
+            guild.members.reduce(
+              (sum, member) => sum + (member.characterLevel || 0),
+              0,
+            ) / nbOfMembers,
+          )
+        : 0;
+
+    return {
       id: guild.id,
       name: guild.name,
-      description: guild.description || '',
-      nbOfMembers: guild.nbOfMembers || 0,
-      nbOfAllies: guild.nbOfAllies || 0,
-      leaderUsername: guild.leaderUsername || 'N/A',
-    }));
+      level: guild.level,
+      averageLevelOfMembers,
+      capacity: guild.capacity,
+      description: guild.description,
+      nbOfMembers: guild.members.length,
+      nbOfAllies: guild.allies.length,
+      leaderUsername: leader ? leader.username : 'Unknown',
+      logo: convertBufferToBase64(guild.logo),
+    };
   }
 
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {

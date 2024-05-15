@@ -1,13 +1,17 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateGuildDto {
   @IsNotEmpty()
-  @IsString()
-  @MaxLength(100)
   name: string;
 
-  @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @IsOptional()
   description?: string;
+
+  @IsOptional()
+  logo?: Buffer;
+
+  @IsNumber()
+  @IsOptional()
+  level?: number;
 }

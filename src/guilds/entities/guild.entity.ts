@@ -22,6 +22,12 @@ export class Guild {
   @Column({ nullable: true })
   description: string;
 
+  @Column({ type: 'bytea', nullable: true })
+  logo: Buffer;
+
+  @Column()
+  level: number;
+
   @OneToMany(() => User, (user) => user.guild)
   members: User[];
 

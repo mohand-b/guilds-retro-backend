@@ -9,6 +9,10 @@ import { AlliancesModule } from './alliances/alliances.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { MembershipRequestsModule } from './membership-requests/membership-requests.module';
+import { PostsModule } from './posts/posts.module';
+import { CommentsModule } from './comments/comments.module';
+import { LikesModule } from './likes/likes.module';
+import { FeedModule } from './feed/feed.module';
 
 @Module({
   imports: [
@@ -36,6 +40,10 @@ import { MembershipRequestsModule } from './membership-requests/membership-reque
     AlliancesModule,
     AuthModule,
     MembershipRequestsModule,
+    PostsModule,
+    CommentsModule,
+    LikesModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

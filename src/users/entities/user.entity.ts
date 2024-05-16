@@ -11,7 +11,7 @@ import { Exclude, Expose } from 'class-transformer';
 import { UserRole } from '../enum/user-role.enum';
 import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
 import { Gender } from '../enum/gender.enum';
-import { Post } from '../../posts/entities/post.entity';
+import { PostEntity } from '../../posts/entities/post.entity';
 import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
 
@@ -61,8 +61,8 @@ export class User {
   )
   membershipRequests: MembershipRequest[];
 
-  @OneToMany(() => Post, (post) => post.user)
-  posts: Post[];
+  @OneToMany(() => PostEntity, (post) => post.user)
+  posts: PostEntity[];
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments: Comment[];

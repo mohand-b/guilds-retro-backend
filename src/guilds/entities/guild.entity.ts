@@ -22,9 +22,6 @@ export class Guild {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ type: 'bytea', nullable: true })
-  logo: Buffer;
-
   @Column()
   level: number;
 
@@ -53,4 +50,7 @@ export class Guild {
 
   @Column({ default: true })
   isRecruiting: boolean;
+
+  @Column({ type: 'bytea', nullable: true })
+  logo: Buffer;
 }

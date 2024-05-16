@@ -19,7 +19,10 @@ export class ImageConversionInterceptor implements NestInterceptor {
       return data.map((item) => this.recursiveConvertLogo(item));
     } else if (data !== null && typeof data === 'object') {
       Object.keys(data).forEach((key) => {
-        if (key === 'logo' && data[key] instanceof Buffer) {
+        if (
+          (key === 'logo' || key === 'image') &&
+          data[key] instanceof Buffer
+        ) {
           data[key] = convertBufferToBase64(data[key]);
         } else {
           data[key] = this.recursiveConvertLogo(data[key]);

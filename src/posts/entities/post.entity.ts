@@ -12,15 +12,12 @@ import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
 
 @Entity()
-export class Post {
+export class PostEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'text', nullable: true })
   text: string;
-
-  @Column({ nullable: true })
-  imageUrl: string;
 
   @ManyToOne(() => User, (user) => user.posts)
   user: User;
@@ -36,4 +33,7 @@ export class Post {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'bytea', nullable: true })
+  image: Buffer;
 }

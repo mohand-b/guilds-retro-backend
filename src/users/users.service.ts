@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Not, Repository } from 'typeorm';
@@ -56,5 +60,17 @@ export class UsersService {
         role: Not(UserRole.CANDIDATE),
       },
     });
+  }
+
+  async updateFeedPreference(
+    userId: number,
+    feedClosingToGuildAndAllies: boolean,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.feedClosingToGuildAndAllies = feedClosingToGuildAndAllies;
+    return this.userRepository.save(user);
   }
 }

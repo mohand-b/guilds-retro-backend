@@ -6,6 +6,7 @@ import { CreateGuildDto } from './dto/create-guild.dto';
 import { User } from '../users/entities/user.entity';
 import { LightGuildDto } from './dto/guild.dto';
 import { convertBufferToBase64 } from '../common/utils/image.utils';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Injectable()
 export class GuildsService {
@@ -73,7 +74,7 @@ export class GuildsService {
 
   private toLightGuildDto(guild: Guild): LightGuildDto {
     const leader: User = guild.members.find(
-      (member) => member.role === 'Meneur',
+      (member) => member.role === UserRole.LEADER,
     );
 
     const nbOfMembers: number = guild.members.length;

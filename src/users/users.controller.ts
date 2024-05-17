@@ -21,11 +21,15 @@ export class UsersController {
     @Body() updateFeedPreferenceDto: UpdateFeedPreferenceDto,
   ): Promise<User> {
     const { feedClosingToGuildAndAllies } = updateFeedPreferenceDto;
-    console.log('feedClosingToGuildAndAllies:', feedClosingToGuildAndAllies);
-    console.log('req.user.id:', req.user.id);
     return this.usersService.updateFeedPreference(
-      req.user.id,
+      req.user.userId,
       feedClosingToGuildAndAllies,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getCurrentUser(@Req() req: any): Promise<User> {
+    return this.usersService.getCurrentUser(req.user.userId);
   }
 }

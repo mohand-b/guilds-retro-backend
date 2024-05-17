@@ -37,7 +37,6 @@ export class User {
   characterLevel: number;
 
   @ManyToOne(() => Guild, (guild) => guild.members, { eager: true })
-  @Exclude()
   guild: Guild;
 
   @Column({

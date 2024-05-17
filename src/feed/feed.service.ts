@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from '../posts/entities/post.entity';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
-import { Guild } from '../guilds/entities/guild.entity';
 
 @Injectable()
 export class FeedService {
@@ -12,26 +11,53 @@ export class FeedService {
     private postRepository: Repository<PostEntity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(Guild)
-    private guildRepository: Repository<Guild>,
   ) {}
 
-  async getFeed(): Promise<PostEntity[]> {
-    /*
-    Nous devons créer le feed de notre user.
+  async getFeed(userId: number): Promise<PostEntity[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['guild', 'guild.allies'],
+    });
 
-    Si notre user à son feedClosingToGuildAndAllies à true,
-    alors nous devons récupérer les posts des membres sa guilde et
-    des membres des guildes alliées.
+    if (!user) throw new Error('User not found');
 
-    Si notre user à son feedClosingToGuildAndAllies à false,
-    alors nous devons récupérer les posts de tous les utilisateurs sauf ceux qui
-    ont leur feedClosingToGuildAndAlliesà true et qui ne sont pas dans la guilde
-    de notre user ou guildes alliées.
+    let posts: PostEntity[];
 
-    Les posts doivent être triés par date de création décroissante.
-    
-     */
-    return [];
+    const guildAndAlliesIds: number[] = [
+      user.guild.id,
+      ...user.guild.allies.map((a) => a.id),
+    ];
+
+    if (user.feedClosingToGuildAndAllies) {
+      posts = await this.postRepository.find({
+        where: {
+          user: {
+            guild: { id: In(guildAndAlliesIds) },
+          },
+        },
+        relations: ['user', 'user.guild', 'likes', 'comments'],
+        order: { createdAt: 'DESC' },
+      });
+    } else {
+      posts = await this.postRepository.find({
+        where: [
+          {
+            user: {
+              guild: { id: In(guildAndAlliesIds) },
+            },
+          },
+          {
+            user: {
+              guild: { id: Not(In(guildAndAlliesIds)) },
+              feedClosingToGuildAndAllies: false,
+            },
+          },
+        ],
+        relations: ['user', 'user.guild', 'likes', 'comments'],
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    return posts;
   }
 }

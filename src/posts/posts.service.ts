@@ -16,6 +16,16 @@ export class PostsService {
       ...createPostDto,
       user: { id: userId } as any,
     });
-    return this.postRepository.save(post);
+
+    const savedPost = await this.postRepository.save(post);
+
+    return this.postRepository.findOne({
+      where: { id: savedPost.id },
+      relations: ['user', 'user.guild'],
+    });
+  }
+
+  async delete(id: number): Promise<void> {
+    await this.postRepository.delete(id);
   }
 }

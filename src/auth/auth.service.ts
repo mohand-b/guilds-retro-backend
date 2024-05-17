@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserDto } from '../users/dto/user.dto';
+import { UserLightDto } from '../users/dto/user.dto';
 import { GuildsService } from '../guilds/guilds.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -22,7 +22,7 @@ export class AuthService {
   ) {}
 
   async registerAsLeader(createGuildLeaderDto: CreateGuildLeaderDto): Promise<{
-    user: UserDto;
+    user: UserLightDto;
     guild: Omit<GuildDto, 'members'>;
     token: string;
   }> {
@@ -54,11 +54,17 @@ export class AuthService {
       level: guild.level,
     };
 
-    return { user, guild: guildDto, token };
+    const userLightDto: UserLightDto = {
+      ...user,
+      guildId: guild ? guild.id : null,
+      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
+    };
+
+    return { user: userLightDto, guild: guildDto, token };
   }
 
   async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
-    user: UserDto;
+    user: UserLightDto;
     guild: Omit<GuildDto, 'members'>;
     token: string;
     request: MembershipRequest;
@@ -93,7 +99,13 @@ export class AuthService {
       level: guild.level,
     };
 
-    return { user, guild: guildDto, token, request };
+    const userLightDto: UserLightDto = {
+      ...user,
+      guildId: guild ? guild.id : null,
+      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
+    };
+
+    return { user: userLightDto, guild: guildDto, token, request };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -113,7 +125,7 @@ export class AuthService {
   }
 
   async login(user: any): Promise<{
-    user: any;
+    user: UserLightDto;
     guild: Omit<Guild, 'members'>;
     token: string;
   }> {
@@ -121,8 +133,15 @@ export class AuthService {
     const { password, guild, ...userInfo } = user;
     const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
+
+    const userLightDto: UserLightDto = {
+      ...userInfo,
+      guildId: guild ? guild.id : null,
+      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
+    };
+
     return {
-      user: userInfo,
+      user: userLightDto,
       guild: guild,
       token: token,
     };

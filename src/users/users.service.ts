@@ -30,6 +30,13 @@ export class UsersService {
     return await this.userRepository.save(user);
   }
 
+  async getCurrentUser(userId: number): Promise<User> {
+    return this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['guild', 'guild.allies', 'posts'],
+    });
+  }
+
   async save(user: User): Promise<User> {
     return await this.userRepository.save(user);
   }

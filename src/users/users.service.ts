@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Not, Repository } from 'typeorm';
+import { FindOneOptions, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole } from './enum/user-role.enum';
 
@@ -56,8 +56,14 @@ export class UsersService {
     return this.userRepository.findOneBy({ id });
   }
 
-  async findOneByUsername(username: string): Promise<User> {
-    return this.userRepository.findOneBy({ username });
+  async findOneByUsername(
+    username: string,
+    options?: FindOneOptions<User>,
+  ): Promise<User> {
+    return this.userRepository.findOne({
+      where: { username },
+      ...options,
+    });
   }
 
   async findMembersByGuild(guildId: number): Promise<User[]> {

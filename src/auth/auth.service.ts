@@ -6,7 +6,6 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildDto } from '../guilds/dto/guild.dto';
-import { Guild } from '../guilds/entities/guild.entity';
 import { MembershipRequestsService } from '../membership-requests/membership-requests.service';
 import { MembershipRequest } from '../membership-requests/entities/membership-request.entity';
 import { CreateGuildLeaderDto } from '../users/dto/create-guild-leader.dto';
@@ -23,7 +22,6 @@ export class AuthService {
 
   async registerAsLeader(createGuildLeaderDto: CreateGuildLeaderDto): Promise<{
     user: UserLightDto;
-    guild: Omit<GuildDto, 'members'>;
     token: string;
   }> {
     const { password, guildName, logo, level, ...userData } =
@@ -56,16 +54,15 @@ export class AuthService {
 
     const userLightDto: UserLightDto = {
       ...user,
-      guildId: guild ? guild.id : null,
+      guild: guildDto,
       guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
-    return { user: userLightDto, guild: guildDto, token };
+    return { user: userLightDto, token };
   }
 
   async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
     user: UserLightDto;
-    guild: Omit<GuildDto, 'members'>;
     token: string;
     request: MembershipRequest;
   }> {
@@ -101,15 +98,17 @@ export class AuthService {
 
     const userLightDto: UserLightDto = {
       ...user,
-      guildId: guild ? guild.id : null,
+      guild: guildDto,
       guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
-    return { user: userLightDto, guild: guildDto, token, request };
+    return { user: userLightDto, token, request };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByUsername(username);
+    const user = await this.usersService.findOneByUsername(username, {
+      relations: ['guild', 'guild.allies'],
+    });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -126,7 +125,6 @@ export class AuthService {
 
   async login(user: any): Promise<{
     user: UserLightDto;
-    guild: Omit<Guild, 'members'>;
     token: string;
   }> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -136,13 +134,12 @@ export class AuthService {
 
     const userLightDto: UserLightDto = {
       ...userInfo,
-      guildId: guild ? guild.id : null,
+      guild: guild,
       guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
     return {
       user: userLightDto,
-      guild: guild,
       token: token,
     };
   }

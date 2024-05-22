@@ -35,7 +35,14 @@ export class FeedService {
             guild: { id: In(guildAndAlliesIds) },
           },
         },
-        relations: ['user', 'user.guild', 'likes', 'comments'],
+        relations: [
+          'user',
+          'user.guild',
+          'likes',
+          'likes.user',
+          'comments',
+          'comments.user',
+        ],
         order: { createdAt: 'DESC' },
       });
     } else {
@@ -53,7 +60,14 @@ export class FeedService {
             },
           },
         ],
-        relations: ['user', 'user.guild', 'likes', 'comments'],
+        relations: [
+          'user',
+          'user.guild',
+          'likes',
+          'likes.user',
+          'comments',
+          'comments.user',
+        ],
         order: { createdAt: 'DESC' },
       });
     }

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
   Req,
@@ -41,5 +42,11 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   deletePost(@Param('id') id: number): Promise<void> {
     return this.postsService.delete(id);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  getPost(@Param('id') id: number): Promise<PostEntity> {
+    return this.postsService.findOneById(id);
   }
 }

@@ -21,11 +21,25 @@ export class PostsService {
 
     return this.postRepository.findOne({
       where: { id: savedPost.id },
-      relations: ['user', 'user.guild'],
+      relations: [
+        'user',
+        'user.guild',
+        'likes',
+        'likes.user',
+        'comments',
+        'comments.user',
+      ],
     });
   }
 
   async delete(id: number): Promise<void> {
     await this.postRepository.delete(id);
+  }
+
+  async findOneById(id: number): Promise<PostEntity> {
+    return await this.postRepository.findOne({
+      where: { id },
+      relations: ['user', 'likes', 'comments', 'likes.user', 'comments.user'],
+    });
   }
 }

@@ -17,17 +17,17 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username } = createUserDto;
-    const existingUser = await this.userRepository.findOne({
-      where: { username },
-    });
-
+    const username = this.normalizeUsername(createUserDto.username);
+    const existingUser = await this.findOneByUsername(username);
     if (existingUser) {
-      throw new ConflictException('Username is already taken.');
+      throw new ConflictException('Username already taken');
     }
 
-    const user = this.userRepository.create(createUserDto);
-    return await this.userRepository.save(user);
+    const user = this.userRepository.create({
+      ...createUserDto,
+      username,
+    });
+    return this.userRepository.save(user);
   }
 
   async getCurrentUser(userId: number): Promise<User> {
@@ -61,7 +61,7 @@ export class UsersService {
     options?: FindOneOptions<User>,
   ): Promise<User> {
     return this.userRepository.findOne({
-      where: { username },
+      where: { username: this.normalizeUsername(username) },
       ...options,
     });
   }
@@ -85,5 +85,10 @@ export class UsersService {
     }
     user.feedClosingToGuildAndAllies = feedClosingToGuildAndAllies;
     return this.userRepository.save(user);
+  }
+
+  private normalizeUsername(username: string): string {
+    if (!username) return username;
+    return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserLightDto } from '../users/dto/user.dto';
-import { GuildsService } from '../guilds/guilds.service';
+import { GuildsService } from '../guilds/services/guilds.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
@@ -10,12 +10,15 @@ import { MembershipRequestsService } from '../membership-requests/membership-req
 import { MembershipRequest } from '../membership-requests/entities/membership-request.entity';
 import { CreateGuildLeaderDto } from '../users/dto/create-guild-leader.dto';
 import { JoinGuildMemberDto } from '../users/dto/join-guild-member.dto';
+import { User } from '../users/entities/user.entity';
+import { GuildCreationCodeService } from '../guilds/services/guild-creation-code.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private guildsService: GuildsService,
+    private guildCreationCodeService: GuildCreationCodeService,
     private membershipRequestsService: MembershipRequestsService,
     private jwtService: JwtService,
   ) {}
@@ -30,6 +33,7 @@ export class AuthService {
 
     const user = await this.usersService.create({
       ...userData,
+      username: userData.username.toLowerCase(), // convert the username to lowercase
       password: hashedPassword,
     });
 
@@ -40,6 +44,8 @@ export class AuthService {
       { name: guildName, logo, level },
       user,
     );
+
+    await this.guildCreationCodeService.invalidateCodes(guildName);
 
     const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
@@ -62,7 +68,7 @@ export class AuthService {
   }
 
   async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
-    user: UserLightDto;
+    user: User;
     token: string;
     request: MembershipRequest;
   }> {
@@ -71,6 +77,7 @@ export class AuthService {
 
     const user = await this.usersService.create({
       ...userData,
+      username: userData.username.toLowerCase(), // convert the username to lowercase
       password: hashedPassword,
     });
 
@@ -88,27 +95,16 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id };
     const token = this.jwtService.sign(payload);
 
-    const guildDto: Omit<GuildDto, 'members'> = {
-      id: guild.id,
-      name: guild.name,
-      description: guild.description,
-      logo: guild.logo,
-      level: guild.level,
-    };
-
-    const userLightDto: UserLightDto = {
-      ...user,
-      guild: guildDto,
-      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
-    };
-
-    return { user: userLightDto, token, request };
+    return { user: user, token, request };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByUsername(username, {
-      relations: ['guild', 'guild.allies'],
-    });
+    const user = await this.usersService.findOneByUsername(
+      username.toLowerCase(),
+      {
+        relations: ['guild', 'guild.allies'],
+      },
+    );
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -135,7 +131,8 @@ export class AuthService {
     const userLightDto: UserLightDto = {
       ...userInfo,
       guild: guild,
-      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
+      guildAlliesIds:
+        guild && guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
     return {

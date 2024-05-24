@@ -1,12 +1,15 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseIntPipe,
+  Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { GuildsService } from './guilds.service';
+import { GuildsService } from './services/guilds.service';
 import { Guild } from './entities/guild.entity';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -15,11 +18,13 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
 import { LightGuildDto } from './dto/guild.dto';
+import { GuildCreationCodeService } from './services/guild-creation-code.service';
 
 @Controller('guilds')
 export class GuildsController {
   constructor(
     private readonly guildsService: GuildsService,
+    private readonly guildCreationCodeService: GuildCreationCodeService,
     private readonly usersService: UsersService,
   ) {}
 
@@ -30,7 +35,7 @@ export class GuildsController {
 
   @Get(':guildId/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.CANDIDATE)
+  @Roles(UserRole.MEMBER)
   getGuildMembers(
     @Param('guildId', ParseIntPipe) guildId: number,
   ): Promise<User[]> {
@@ -39,7 +44,7 @@ export class GuildsController {
 
   @Get('current')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.CANDIDATE)
+  @Roles(UserRole.MEMBER)
   getCurrentGuild(@Req() req: any): Promise<Guild> {
     return this.guildsService.findCurrentGuild(req.user.userId);
   }
@@ -47,5 +52,16 @@ export class GuildsController {
   @Get('recruiting')
   findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
     return this.guildsService.findRecruitingGuilds();
+  }
+
+  @Post('generate-creation-code')
+  async generateGuildCode(@Body() body: { guildName: string }) {
+    return this.guildCreationCodeService.generateCode(body.guildName);
+  }
+
+  @Get('validate-guild-code')
+  async validateGuildCode(@Query('code') code: string) {
+    const guildName = await this.guildCreationCodeService.validateCode(code);
+    return { guildName };
   }
 }

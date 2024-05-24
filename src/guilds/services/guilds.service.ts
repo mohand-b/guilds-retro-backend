@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Guild } from './entities/guild.entity';
+import { Guild } from '../entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateGuildDto } from './dto/create-guild.dto';
-import { User } from '../users/entities/user.entity';
-import { LightGuildDto } from './dto/guild.dto';
-import { convertBufferToBase64 } from '../common/utils/image.utils';
-import { UserRole } from '../users/enum/user-role.enum';
+import { CreateGuildDto } from '../dto/create-guild.dto';
+import { User } from '../../users/entities/user.entity';
+import { LightGuildDto } from '../dto/guild.dto';
+import { convertBufferToBase64 } from '../../common/utils/image.utils';
+import { UserRole } from '../../users/enum/user-role.enum';
 
 @Injectable()
 export class GuildsService {

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { GuildsService } from '../guilds/guilds.service';
+import { GuildsService } from '../guilds/services/guilds.service';
 import { Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
 

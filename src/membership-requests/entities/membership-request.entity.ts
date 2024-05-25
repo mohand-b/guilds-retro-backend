@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Guild } from '../../guilds/entities/guild.entity';
 import { RequestStatus } from '../enum/request-status.enum';
@@ -20,4 +26,10 @@ export class MembershipRequest {
     default: RequestStatus.PENDING,
   })
   status: RequestStatus;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @CreateDateColumn()
+  updatedAt: Date;
 }

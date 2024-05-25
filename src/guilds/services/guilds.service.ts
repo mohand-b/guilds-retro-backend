@@ -72,7 +72,7 @@ export class GuildsService {
       .map((guild) => this.toLightGuildDto(guild));
   }
 
-  private toLightGuildDto(guild: Guild): LightGuildDto {
+  toLightGuildDto(guild: Guild): LightGuildDto {
     const leader: User = guild.members.find(
       (member) => member.role === UserRole.LEADER,
     );
@@ -98,7 +98,7 @@ export class GuildsService {
       nbOfMembers: guild.members.length,
       nbOfAllies: guild.allies.length,
       leaderUsername: leader ? leader.username : 'Unknown',
-      logo: convertBufferToBase64(guild.logo),
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
     };
   }
 

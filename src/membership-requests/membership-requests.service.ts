@@ -10,6 +10,8 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Guild } from '../guilds/entities/guild.entity';
 import { UserRole } from '../users/enum/user-role.enum';
+import { GuildsService } from '../guilds/services/guilds.service';
+import { MembershipRequestDto } from './dto/membership-request.dto';
 
 @Injectable()
 export class MembershipRequestsService {
@@ -18,13 +20,14 @@ export class MembershipRequestsService {
     private membershipRequestRepository: Repository<MembershipRequest>,
     @InjectRepository(Guild)
     private guildsRepository: Repository<Guild>,
+    private guildsService: GuildsService,
     private usersService: UsersService,
   ) {}
 
   async createMembershipRequest(
     userId: number,
     guildId: number,
-  ): Promise<MembershipRequest> {
+  ): Promise<MembershipRequestDto> {
     const user = await this.usersService.findOneById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -36,7 +39,12 @@ export class MembershipRequestsService {
 
     const guild = await this.guildsRepository.findOne({
       where: { id: guildId },
-      relations: ['membershipRequests', 'membershipRequests.user'],
+      relations: [
+        'members',
+        'allies',
+        'membershipRequests',
+        'membershipRequests.user',
+      ],
     });
 
     if (!guild) {
@@ -58,9 +66,10 @@ export class MembershipRequestsService {
     newRequest.user = user;
     newRequest.guild = guild;
     newRequest.status = RequestStatus.PENDING;
+    newRequest.createdAt = new Date();
 
     await this.membershipRequestRepository.save(newRequest);
-    return newRequest;
+    return { ...newRequest, guild: this.guildsService.toLightGuildDto(guild) };
   }
 
   async acceptMembershipRequest(requestId: number): Promise<MembershipRequest> {
@@ -76,6 +85,7 @@ export class MembershipRequestsService {
     request.status = RequestStatus.APPROVED;
     request.user.role = UserRole.MEMBER;
     request.user.guild = request.guild;
+    request.updatedAt = new Date();
 
     await this.membershipRequestRepository.save(request);
     await this.usersService.save(request.user);
@@ -93,6 +103,7 @@ export class MembershipRequestsService {
     }
 
     request.status = RequestStatus.REJECTED;
+    request.updatedAt = new Date();
 
     await this.membershipRequestRepository.save(request);
 
@@ -106,5 +117,17 @@ export class MembershipRequestsService {
       where: { guild: { id: guildId }, status: RequestStatus.PENDING },
       relations: ['user'],
     });
+  }
+
+  async findRequestsForUser(userId: number): Promise<MembershipRequestDto[]> {
+    const requests = await this.membershipRequestRepository.find({
+      where: { user: { id: userId } },
+      relations: ['guild', 'guild.members', 'guild.allies', 'user'],
+    });
+
+    return requests.map((request) => ({
+      ...request,
+      guild: this.guildsService.toLightGuildDto(request.guild),
+    }));
   }
 }

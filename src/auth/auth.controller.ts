@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Req,
   UnauthorizedException,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -11,6 +14,7 @@ import { LoginDto } from './dto/login.dto';
 import { CreateGuildLeaderDto } from '../users/dto/create-guild-leader.dto';
 import { JoinGuildMemberDto } from '../users/dto/join-guild-member.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -43,5 +47,11 @@ export class AuthController {
       throw new UnauthorizedException('Invalid username or password');
     }
     return this.authService.login(user);
+  }
+
+  @Get('refresh')
+  @UseGuards(JwtAuthGuard)
+  async refresh(@Req() req: any) {
+    return this.authService.refreshUser(req.user.userId);
   }
 }

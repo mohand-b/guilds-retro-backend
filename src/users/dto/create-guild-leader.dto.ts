@@ -9,5 +9,8 @@ export class CreateGuildLeaderDto extends CreateUserDto {
   @IsNotEmpty({ message: 'Level is required' })
   level: number;
 
+  @IsString()
+  description: string;
+
   logo: Buffer;
 }

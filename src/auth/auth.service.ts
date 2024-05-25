@@ -7,11 +7,11 @@ import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildDto } from '../guilds/dto/guild.dto';
 import { MembershipRequestsService } from '../membership-requests/membership-requests.service';
-import { MembershipRequest } from '../membership-requests/entities/membership-request.entity';
 import { CreateGuildLeaderDto } from '../users/dto/create-guild-leader.dto';
 import { JoinGuildMemberDto } from '../users/dto/join-guild-member.dto';
 import { User } from '../users/entities/user.entity';
 import { GuildCreationCodeService } from '../guilds/services/guild-creation-code.service';
+import { MembershipRequestDto } from '../membership-requests/dto/membership-request.dto';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +27,7 @@ export class AuthService {
     user: UserLightDto;
     token: string;
   }> {
-    const { password, guildName, logo, level, ...userData } =
+    const { password, guildName, logo, level, description, ...userData } =
       createGuildLeaderDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -41,7 +41,7 @@ export class AuthService {
     user.role = UserRole.LEADER;
 
     const guild = await this.guildsService.create(
-      { name: guildName, logo, level },
+      { name: guildName, logo, level, description },
       user,
     );
 
@@ -70,7 +70,6 @@ export class AuthService {
   async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
     user: User;
     token: string;
-    request: MembershipRequest;
   }> {
     const { password, guildId, ...userData } = joinGuildMemberDto;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -86,16 +85,15 @@ export class AuthService {
       throw new Error('Guild not found');
     }
 
-    const request =
-      await this.membershipRequestsService.createMembershipRequest(
-        user.id,
-        guildId,
-      );
+    await this.membershipRequestsService.createMembershipRequest(
+      user.id,
+      guildId,
+    );
 
     const payload = { username: user.username, sub: user.id };
     const token = this.jwtService.sign(payload);
 
-    return { user: user, token, request };
+    return { user: user, token };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -122,6 +120,7 @@ export class AuthService {
   async login(user: any): Promise<{
     user: UserLightDto;
     token: string;
+    requests?: MembershipRequestDto[];
   }> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, guild, ...userInfo } = user;
@@ -135,9 +134,47 @@ export class AuthService {
         guild && guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
+    const requests: MembershipRequestDto[] =
+      await this.membershipRequestsService.findRequestsForUser(user.id);
+
     return {
       user: userLightDto,
       token: token,
+      requests,
+    };
+  }
+
+  async refreshUser(userId: number): Promise<{
+    user: UserLightDto;
+    token: string;
+    requests?: MembershipRequestDto[];
+  }> {
+    const user = await this.usersService.findOneById(userId, {
+      relations: ['guild', 'guild.allies'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const payload = { username: user.username, sub: user.id, role: user.role };
+    const token = this.jwtService.sign(payload);
+
+    const userLightDto: UserLightDto = {
+      ...user,
+      guild: user.guild,
+      guildAlliesIds: user.guild?.allies
+        ? user.guild.allies.map((ally) => ally.id)
+        : [],
+    };
+
+    const requests: MembershipRequestDto[] =
+      await this.membershipRequestsService.findRequestsForUser(user.id);
+
+    return {
+      user: userLightDto,
+      token: token,
+      requests,
     };
   }
 }

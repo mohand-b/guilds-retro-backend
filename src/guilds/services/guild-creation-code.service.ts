@@ -9,7 +9,6 @@ export class GuildCreationCodeService {
     'VULBIS',
     'EMERAUDE',
     'POURPRE',
-    'DOFUS',
     'TURQUOISE',
     'EBENE',
     'IVOIRE',
@@ -25,7 +24,13 @@ export class GuildCreationCodeService {
     'SKEUNK',
     'WABBIT',
     'ARAKNE',
+    'CHAFER',
     'PANDALA',
+    'QUTAN',
+    'ILYZAELLE',
+    'RUSHU',
+    'BONTA',
+    'BRAKMAR',
   ];
 
   constructor(

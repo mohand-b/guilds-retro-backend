@@ -82,6 +82,11 @@ export class MembershipRequestsService {
       throw new NotFoundException('Membership request not found');
     }
 
+    await this.membershipRequestRepository.update(
+      { user: request.user, status: RequestStatus.PENDING },
+      { status: RequestStatus.REJECTED, updatedAt: new Date() },
+    );
+
     request.status = RequestStatus.APPROVED;
     request.user.role = UserRole.MEMBER;
     request.user.guild = request.guild;

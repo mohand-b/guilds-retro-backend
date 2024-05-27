@@ -8,6 +8,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { FindOneOptions, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole } from './enum/user-role.enum';
+import { UserDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -93,5 +94,16 @@ export class UsersService {
   private normalizeUsername(username: string): string {
     if (!username) return username;
     return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+  }
+
+  async updateUserRole(userId: number, role: UserRole): Promise<UserDto> {
+    const user: User = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.role = role;
+    return this.userRepository.save(user);
   }
 }

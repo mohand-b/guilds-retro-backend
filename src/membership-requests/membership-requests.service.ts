@@ -1,17 +1,13 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { MembershipRequest } from './entities/membership-request.entity';
-import { RequestStatus } from './enum/request-status.enum';
-import { UsersService } from '../users/users.service';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Guild } from '../guilds/entities/guild.entity';
-import { UserRole } from '../users/enum/user-role.enum';
-import { GuildsService } from '../guilds/services/guilds.service';
-import { MembershipRequestDto } from './dto/membership-request.dto';
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { MembershipRequest } from "./entities/membership-request.entity";
+import { RequestStatus } from "./enum/request-status.enum";
+import { UsersService } from "../users/users.service";
+import { Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Guild } from "../guilds/entities/guild.entity";
+import { UserRole } from "../users/enum/user-role.enum";
+import { GuildsService } from "../guilds/services/guilds.service";
+import { MembershipRequestDto } from "./dto/membership-request.dto";
 
 @Injectable()
 export class MembershipRequestsService {
@@ -21,34 +17,35 @@ export class MembershipRequestsService {
     @InjectRepository(Guild)
     private guildsRepository: Repository<Guild>,
     private guildsService: GuildsService,
-    private usersService: UsersService,
-  ) {}
+    private usersService: UsersService
+  ) {
+  }
 
   async createMembershipRequest(
     userId: number,
-    guildId: number,
+    guildId: number
   ): Promise<MembershipRequestDto> {
     const user = await this.usersService.findOneById(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     if (user.guild) {
-      throw new BadRequestException('User is already a member of a guild');
+      throw new BadRequestException("User is already a member of a guild");
     }
 
     const guild = await this.guildsRepository.findOne({
       where: { id: guildId },
       relations: [
-        'members',
-        'allies',
-        'membershipRequests',
-        'membershipRequests.user',
-      ],
+        "members",
+        "allies",
+        "membershipRequests",
+        "membershipRequests.user"
+      ]
     });
 
     if (!guild) {
-      throw new NotFoundException('Guild not found');
+      throw new NotFoundException("Guild not found");
     }
 
     if (!guild.membershipRequests) {
@@ -56,10 +53,10 @@ export class MembershipRequestsService {
     }
 
     const existingRequest = guild.membershipRequests.find(
-      (request) => request.user && request.user.id === userId,
+      (request) => request.user && request.user.id === userId
     );
     if (existingRequest && existingRequest.status === RequestStatus.PENDING) {
-      throw new BadRequestException('Membership request already exists');
+      throw new BadRequestException("Membership request already exists");
     }
 
     const newRequest = new MembershipRequest();
@@ -69,22 +66,22 @@ export class MembershipRequestsService {
     newRequest.createdAt = new Date();
 
     await this.membershipRequestRepository.save(newRequest);
-    return { ...newRequest, guild: this.guildsService.toLightGuildDto(guild) };
+    return { ...newRequest, guild: this.guildsService.toGuildSummaryDto(guild) };
   }
 
   async acceptMembershipRequest(requestId: number): Promise<MembershipRequest> {
     const request = await this.membershipRequestRepository.findOne({
       where: { id: requestId },
-      relations: ['user', 'guild'],
+      relations: ["user", "guild"]
     });
 
     if (!request) {
-      throw new NotFoundException('Membership request not found');
+      throw new NotFoundException("Membership request not found");
     }
 
     await this.membershipRequestRepository.update(
       { user: request.user, status: RequestStatus.PENDING },
-      { status: RequestStatus.REJECTED, updatedAt: new Date() },
+      { status: RequestStatus.REJECTED, updatedAt: new Date() }
     );
 
     request.status = RequestStatus.APPROVED;
@@ -100,11 +97,11 @@ export class MembershipRequestsService {
 
   async rejectMembershipRequest(requestId: number): Promise<MembershipRequest> {
     const request = await this.membershipRequestRepository.findOne({
-      where: { id: requestId },
+      where: { id: requestId }
     });
 
     if (!request) {
-      throw new NotFoundException('Membership request not found');
+      throw new NotFoundException("Membership request not found");
     }
 
     request.status = RequestStatus.REJECTED;
@@ -116,23 +113,23 @@ export class MembershipRequestsService {
   }
 
   async findPendingRequestsForGuild(
-    guildId: number,
+    guildId: number
   ): Promise<MembershipRequest[]> {
     return this.membershipRequestRepository.find({
       where: { guild: { id: guildId }, status: RequestStatus.PENDING },
-      relations: ['user'],
+      relations: ["user"]
     });
   }
 
   async findRequestsForUser(userId: number): Promise<MembershipRequestDto[]> {
     const requests = await this.membershipRequestRepository.find({
       where: { user: { id: userId } },
-      relations: ['guild', 'guild.members', 'guild.allies', 'user'],
+      relations: ["guild", "guild.members", "guild.allies", "user"]
     });
 
     return requests.map((request) => ({
       ...request,
-      guild: this.guildsService.toLightGuildDto(request.guild),
+      guild: this.guildsService.toGuildSummaryDto(request.guild)
     }));
   }
 }

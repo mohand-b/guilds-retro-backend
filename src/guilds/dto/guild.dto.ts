@@ -7,9 +7,10 @@ export class GuildDto {
   logo: any;
   level: number;
   members: UserDto[];
+  allies?: GuildSummaryDto[];
 }
 
-export class LightGuildDto {
+export class GuildSummaryDto {
   id: number;
   name: string;
   level: number;

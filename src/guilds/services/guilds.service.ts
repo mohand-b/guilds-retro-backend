@@ -4,7 +4,7 @@ import { Guild } from '../entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { User } from '../../users/entities/user.entity';
-import { LightGuildDto } from '../dto/guild.dto';
+import { GuildDto, GuildSummaryDto } from '../dto/guild.dto';
 import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
 
@@ -37,7 +37,7 @@ export class GuildsService {
     });
   }
 
-  async findCurrentGuild(userId: number): Promise<Guild> {
+  async findCurrentGuild(userId: number): Promise<GuildDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild'],
@@ -49,19 +49,26 @@ export class GuildsService {
       );
     }
 
-    return this.guildRepository.findOne({
+    const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
-      relations: ['members', 'allies'],
+      relations: ['members', 'allies', 'allies.members', 'allies.allies'],
     });
+
+    if (!guild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    const allies: GuildSummaryDto[] = guild.allies.map((ally) =>
+      this.toGuildSummaryDto(ally),
+    );
+
+    return {
+      ...guild,
+      allies,
+    };
   }
 
-  async findAll(): Promise<Guild[]> {
-    return this.guildRepository.find({
-      relations: ['members', 'allies'],
-    });
-  }
-
-  async findRecruitingGuilds(): Promise<LightGuildDto[]> {
+  async findRecruitingGuilds(): Promise<GuildSummaryDto[]> {
     const guilds = await this.guildRepository.find({
       where: { isRecruiting: true },
       relations: ['members', 'allies'],
@@ -69,10 +76,10 @@ export class GuildsService {
 
     return guilds
       .filter((guild) => guild.members.length <= guild.capacity)
-      .map((guild) => this.toLightGuildDto(guild));
+      .map((guild) => this.toGuildSummaryDto(guild));
   }
 
-  toLightGuildDto(guild: Guild): LightGuildDto {
+  toGuildSummaryDto(guild: Guild): GuildSummaryDto {
     const leader: User = guild.members.find(
       (member) => member.role === UserRole.LEADER,
     );

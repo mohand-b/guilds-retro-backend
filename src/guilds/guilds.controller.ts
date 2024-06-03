@@ -10,14 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { GuildsService } from './services/guilds.service';
-import { Guild } from './entities/guild.entity';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { LightGuildDto } from './dto/guild.dto';
+import { GuildDto, GuildSummaryDto } from './dto/guild.dto';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
 
 @Controller('guilds')
@@ -27,11 +26,6 @@ export class GuildsController {
     private readonly guildCreationCodeService: GuildCreationCodeService,
     private readonly usersService: UsersService,
   ) {}
-
-  @Get()
-  findAll(): Promise<Guild[]> {
-    return this.guildsService.findAll();
-  }
 
   @Get(':guildId/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,12 +39,12 @@ export class GuildsController {
   @Get('current')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
-  getCurrentGuild(@Req() req: any): Promise<Guild> {
+  getCurrentGuild(@Req() req: any): Promise<GuildDto> {
     return this.guildsService.findCurrentGuild(req.user.userId);
   }
 
   @Get('recruiting')
-  findAllRecruitingGuilds(): Promise<LightGuildDto[]> {
+  findAllRecruitingGuilds(): Promise<GuildSummaryDto[]> {
     return this.guildsService.findRecruitingGuilds();
   }
 

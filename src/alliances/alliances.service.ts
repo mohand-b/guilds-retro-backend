@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GuildsService } from '../guilds/services/guilds.service';
 import { Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
+import { AllianceDto } from './dto/alliance.dto';
 
 @Injectable()
 export class AlliancesService {
@@ -112,18 +113,34 @@ export class AlliancesService {
     return alliance;
   }
 
-  async getPendingAllianceRequests(guildId: number): Promise<Alliance[]> {
+  async getPendingAllianceRequests(guildId: number): Promise<AllianceDto[]> {
     const pendingRequests = await this.allianceRepository.find({
       where: { targetGuild: { id: guildId }, status: 'PENDING' },
-      relations: ['requesterGuild', 'targetGuild'],
+      relations: [
+        'requesterGuild',
+        'requesterGuild.members',
+        'requesterGuild.allies',
+      ],
     });
 
-    if (!pendingRequests) {
+    if (!pendingRequests || pendingRequests.length === 0) {
       throw new NotFoundException(
-        `No pending alliance requests found for guild with ID ${guildId}`,
+        `No pending alliance requests found for this guild`,
       );
     }
 
-    return pendingRequests;
+    const transformedRequests: AllianceDto[] = pendingRequests.map(
+      (request) => {
+        return {
+          id: request.id,
+          requesterGuild: this.guildsService.toGuildSummaryDto(
+            request.requesterGuild,
+          ),
+          status: request.status,
+        };
+      },
+    );
+
+    return transformedRequests;
   }
 }

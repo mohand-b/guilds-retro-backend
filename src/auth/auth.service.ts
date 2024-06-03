@@ -160,9 +160,13 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
 
+    const allies = user.guild.allies.map((ally) =>
+      this.guildsService.toGuildSummaryDto(ally),
+    );
+
     const userLightDto: UserLightDto = {
       ...user,
-      guild: user.guild,
+      guild: { ...user.guild, allies },
       guildAlliesIds: user.guild?.allies
         ? user.guild.allies.map((ally) => ally.id)
         : [],

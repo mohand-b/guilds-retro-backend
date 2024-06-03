@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GuildsService } from '../guilds/services/guilds.service';
 import { Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
-import { AllianceDto } from './dto/alliance.dto';
+import {
+  AllianceRequestDto,
+  GuildAllianceRequestsDto,
+} from './dto/alliance.dto';
 
 @Injectable()
 export class AlliancesService {
@@ -113,9 +116,11 @@ export class AlliancesService {
     return alliance;
   }
 
-  async getPendingAllianceRequests(guildId: number): Promise<AllianceDto[]> {
-    const pendingRequests = await this.allianceRepository.find({
-      where: { targetGuild: { id: guildId }, status: 'PENDING' },
+  async getAllianceRequests(
+    guildId: number,
+  ): Promise<GuildAllianceRequestsDto> {
+    const receivedRequests = await this.allianceRepository.find({
+      where: { targetGuild: { id: guildId } },
       relations: [
         'requesterGuild',
         'requesterGuild.members',
@@ -123,14 +128,13 @@ export class AlliancesService {
       ],
     });
 
-    if (!pendingRequests || pendingRequests.length === 0) {
-      throw new NotFoundException(
-        `No pending alliance requests found for this guild`,
-      );
-    }
+    const sentRequests = await this.allianceRepository.find({
+      where: { requesterGuild: { id: guildId } },
+      relations: ['targetGuild', 'targetGuild.members', 'targetGuild.allies'],
+    });
 
-    const transformedRequests: AllianceDto[] = pendingRequests.map(
-      (request) => {
+    const transformedReceivedRequests: AllianceRequestDto[] =
+      receivedRequests.map((request) => {
         return {
           id: request.id,
           requesterGuild: this.guildsService.toGuildSummaryDto(
@@ -138,9 +142,23 @@ export class AlliancesService {
           ),
           status: request.status,
         };
+      });
+
+    const transformedSentRequests: AllianceRequestDto[] = sentRequests.map(
+      (request) => {
+        return {
+          id: request.id,
+          targetGuild: this.guildsService.toGuildSummaryDto(
+            request.targetGuild,
+          ),
+          status: request.status,
+        };
       },
     );
 
-    return transformedRequests;
+    return {
+      receivedAllianceRequests: transformedReceivedRequests,
+      sentAllianceRequests: transformedSentRequests,
+    };
   }
 }

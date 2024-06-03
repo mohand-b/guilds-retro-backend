@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Alliance } from './entities/alliance.entity';
 import { AlliancesService } from './alliances.service';
+import { GuildAllianceRequestsDto } from './dto/alliance.dto';
 
 @Controller('alliances')
 export class AlliancesController {
@@ -45,8 +46,10 @@ export class AlliancesController {
     }
   }
 
-  @Get('/pending/:guildId')
-  async getPendingRequests(@Param('guildId') guildId: number) {
-    return await this.alliancesService.getPendingAllianceRequests(guildId);
+  @Get('requests/:guildId')
+  async getAllianceRequests(
+    @Param('guildId') guildId: number,
+  ): Promise<GuildAllianceRequestsDto> {
+    return this.alliancesService.getAllianceRequests(guildId);
   }
 }

@@ -48,6 +48,11 @@ export class GuildsController {
     return this.guildsService.findRecruitingGuilds();
   }
 
+  @Get('to-alliance')
+  findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
+    return this.guildsService.findGuildsForAlliance();
+  }
+
   @Post('generate-creation-code')
   async generateGuildCode(@Body() body: { guildName: string }) {
     return this.guildCreationCodeService.generateCode(body.guildName);

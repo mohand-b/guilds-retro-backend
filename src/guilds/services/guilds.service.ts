@@ -79,6 +79,16 @@ export class GuildsService {
       .map((guild) => this.toGuildSummaryDto(guild));
   }
 
+  async findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
+    const guilds = await this.guildRepository.find({
+      relations: ['members', 'allies'],
+    });
+
+    return guilds
+      .filter((guild) => guild.allies.length < 3)
+      .map((guild) => this.toGuildSummaryDto(guild));
+  }
+
   toGuildSummaryDto(guild: Guild): GuildSummaryDto {
     const leader: User = guild.members.find(
       (member) => member.role === UserRole.LEADER,

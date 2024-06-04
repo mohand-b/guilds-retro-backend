@@ -11,3 +11,10 @@ export class GuildAllianceRequestsDto {
   receivedAllianceRequests: AllianceRequestDto[];
   sentAllianceRequests: AllianceRequestDto[];
 }
+
+export class AllianceDto {
+  id: number;
+  requesterGuild: GuildSummaryDto;
+  targetGuild: GuildSummaryDto;
+  status: string;
+}

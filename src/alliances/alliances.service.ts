@@ -8,6 +8,7 @@ import { GuildsService } from '../guilds/services/guilds.service';
 import { Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
 import {
+  AllianceDto,
   AllianceRequestDto,
   GuildAllianceRequestsDto,
 } from './dto/alliance.dto';
@@ -51,16 +52,10 @@ export class AlliancesService {
       ],
     });
 
-    if (existingRequest) {
-      if (existingRequest.status === 'PENDING') {
-        throw new BadRequestException(
-          'There is already a pending alliance request between these guilds',
-        );
-      } else {
-        throw new BadRequestException(
-          'An alliance request already exists and was processed',
-        );
-      }
+    if (existingRequest && existingRequest.status === 'PENDING') {
+      throw new BadRequestException(
+        'There is already a pending alliance request between these guilds',
+      );
     }
 
     const newRequest = this.allianceRepository.create({
@@ -72,10 +67,17 @@ export class AlliancesService {
     return this.allianceRepository.save(newRequest);
   }
 
-  async acceptAllianceRequest(allianceId: number): Promise<Alliance> {
+  async acceptAllianceRequest(allianceId: number): Promise<AllianceDto> {
     const alliance = await this.allianceRepository.findOne({
       where: { id: allianceId },
-      relations: ['requesterGuild', 'targetGuild'],
+      relations: [
+        'requesterGuild',
+        'requesterGuild.members',
+        'requesterGuild.allies',
+        'targetGuild',
+        'targetGuild.members',
+        'targetGuild.allies',
+      ],
     });
 
     if (!alliance) {
@@ -98,7 +100,13 @@ export class AlliancesService {
       alliance.requesterGuild.id,
     );
 
-    return alliance;
+    return {
+      ...alliance,
+      requesterGuild: this.guildsService.toGuildSummaryDto(
+        alliance.requesterGuild,
+      ),
+      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+    };
   }
 
   async rejectAllianceRequest(allianceId: number): Promise<Alliance> {

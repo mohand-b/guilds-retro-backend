@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { Alliance } from './entities/alliance.entity';
 import { AlliancesService } from './alliances.service';
-import { GuildAllianceRequestsDto } from './dto/alliance.dto';
+import { AllianceDto, GuildAllianceRequestsDto } from './dto/alliance.dto';
 
 @Controller('alliances')
 export class AlliancesController {
@@ -29,12 +29,8 @@ export class AlliancesController {
   }
 
   @Patch(':id/accept')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async acceptRequest(@Param('id') id: number): Promise<void> {
-    const alliance = await this.alliancesService.acceptAllianceRequest(id);
-    if (!alliance) {
-      throw new NotFoundException(`Alliance request #${id} not found`);
-    }
+  async acceptRequest(@Param('id') id: number): Promise<AllianceDto> {
+    return this.alliancesService.acceptAllianceRequest(id);
   }
 
   @Patch(':id/reject')

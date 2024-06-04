@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Guild } from '../../guilds/entities/guild.entity';
+import { AllianceStatusEnum } from '../enum/alliance-status.enum';
 
 @Entity()
 export class Alliance {
@@ -14,8 +15,8 @@ export class Alliance {
 
   @Column({
     type: 'enum',
-    enum: ['PENDING', 'ACCEPTED', 'REJECTED'],
-    default: 'PENDING',
+    enum: AllianceStatusEnum,
+    default: AllianceStatusEnum.PENDING,
   })
   status: string;
 }

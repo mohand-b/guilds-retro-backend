@@ -28,6 +28,17 @@ export class AlliancesController {
     );
   }
 
+  @Patch('dissolve')
+  async dissolveAlliance(
+    @Body('guildId1') guildId1: number,
+    @Body('guildId2') guildId2: number,
+  ): Promise<AllianceDto> {
+    if (!guildId1 || !guildId2) {
+      throw new NotFoundException('Guild IDs must be provided');
+    }
+    return this.alliancesService.dissolveAlliance(guildId1, guildId2);
+  }
+
   @Patch(':id/accept')
   async acceptRequest(@Param('id') id: number): Promise<AllianceDto> {
     return this.alliancesService.acceptAllianceRequest(id);

@@ -134,4 +134,18 @@ export class GuildsService {
     guild.allies.push(allyGuild);
     await this.guildRepository.save(guild);
   }
+
+  async removeAlly(guildId: number, allyId: number): Promise<void> {
+    const guild = await this.guildRepository.findOne({
+      where: { id: guildId },
+      relations: ['allies'],
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    guild.allies = guild.allies.filter((ally) => ally.id !== allyId);
+    await this.guildRepository.save(guild);
+  }
 }

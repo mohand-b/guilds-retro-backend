@@ -12,6 +12,7 @@ import {
   AllianceRequestDto,
   GuildAllianceRequestsDto,
 } from './dto/alliance.dto';
+import { AllianceStatusEnum } from './enum/alliance-status.enum';
 
 @Injectable()
 export class AlliancesService {
@@ -67,6 +68,56 @@ export class AlliancesService {
     return this.allianceRepository.save(newRequest);
   }
 
+  async dissolveAlliance(
+    guildId1: number,
+    guildId2: number,
+  ): Promise<AllianceDto> {
+    const alliance = await this.allianceRepository.findOne({
+      where: [
+        {
+          requesterGuild: { id: guildId1 },
+          targetGuild: { id: guildId2 },
+        },
+        {
+          requesterGuild: { id: guildId2 },
+          targetGuild: { id: guildId1 },
+        },
+      ],
+      relations: [
+        'requesterGuild',
+        'requesterGuild.members',
+        'requesterGuild.allies',
+        'targetGuild',
+        'targetGuild.members',
+        'targetGuild.allies',
+      ],
+    });
+
+    if (!alliance) {
+      throw new NotFoundException('Alliance not found');
+    }
+
+    alliance.status = AllianceStatusEnum.DISSOLVED;
+    await this.allianceRepository.save(alliance);
+
+    await this.guildsService.removeAlly(
+      alliance.requesterGuild.id,
+      alliance.targetGuild.id,
+    );
+    await this.guildsService.removeAlly(
+      alliance.targetGuild.id,
+      alliance.requesterGuild.id,
+    );
+
+    return {
+      ...alliance,
+      requesterGuild: this.guildsService.toGuildSummaryDto(
+        alliance.requesterGuild,
+      ),
+      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+    };
+  }
+
   async acceptAllianceRequest(allianceId: number): Promise<AllianceDto> {
     const alliance = await this.allianceRepository.findOne({
       where: { id: allianceId },
@@ -84,11 +135,11 @@ export class AlliancesService {
       throw new NotFoundException('Alliance request not found');
     }
 
-    if (alliance.status !== 'PENDING') {
+    if (alliance.status !== AllianceStatusEnum.PENDING) {
       throw new Error('Alliance request is not pending');
     }
 
-    alliance.status = 'ACCEPTED';
+    alliance.status = AllianceStatusEnum.ACCEPTED;
     await this.allianceRepository.save(alliance);
 
     await this.guildsService.addAlly(
@@ -118,7 +169,7 @@ export class AlliancesService {
       throw new NotFoundException('Alliance request not found');
     }
 
-    alliance.status = 'REJECTED';
+    alliance.status = AllianceStatusEnum.REJECTED;
     await this.allianceRepository.save(alliance);
 
     return alliance;

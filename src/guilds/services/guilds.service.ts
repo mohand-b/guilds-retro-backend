@@ -7,34 +7,52 @@ import { User } from '../../users/entities/user.entity';
 import { GuildDto, GuildSummaryDto } from '../dto/guild.dto';
 import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
+import { MemberDto } from '../../users/dto/user.dto';
 
 @Injectable()
 export class GuildsService {
   constructor(
     @InjectRepository(Guild)
-    private guildRepository: Repository<Guild>,
+    private readonly guildRepository: Repository<Guild>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
-
-  async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
-    const logoBuffer: Buffer | null = createGuildDto.logo;
-
-    const guild = this.guildRepository.create({
-      ...createGuildDto,
-      logo: logoBuffer,
-      members: [creator],
-    });
-
-    await this.guildRepository.save(guild);
-    return guild;
-  }
 
   async findOne(id: number): Promise<Guild> {
     return this.guildRepository.findOne({
-      where: { id: id },
+      where: { id },
       relations: ['allies'],
     });
+  }
+
+  async findById(id: number): Promise<GuildDto> {
+    const guild = await this.guildRepository.findOne({
+      where: { id },
+      relations: [
+        'members',
+        'members.guild',
+        'members.guild.allies',
+        'allies',
+        'allies.members',
+      ],
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    const members = guild.members.map((member) => this.toMemberDto(member));
+    const allies = guild.allies.map((ally) => this.toGuildSummaryDto(ally));
+
+    return {
+      id: guild.id,
+      name: guild.name,
+      description: guild.description,
+      logo: guild.logo,
+      level: guild.level,
+      members,
+      allies,
+    };
   }
 
   async findCurrentGuild(userId: number): Promise<GuildDto> {
@@ -51,21 +69,47 @@ export class GuildsService {
 
     const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
-      relations: ['members', 'allies', 'allies.members', 'allies.allies'],
+      relations: [
+        'members',
+        'members.guild',
+        'members.guild.allies',
+        'allies',
+        'allies.members',
+      ],
     });
 
     if (!guild) {
       throw new NotFoundException('Guild not found');
     }
 
-    const allies: GuildSummaryDto[] = guild.allies.map((ally) =>
-      this.toGuildSummaryDto(ally),
-    );
+    const members = guild.members.map((member) => this.toMemberDto(member));
+    const allies = guild.allies.map((ally) => this.toGuildSummaryDto(ally));
 
     return {
-      ...guild,
+      id: guild.id,
+      name: guild.name,
+      description: guild.description,
+      logo: guild.logo,
+      level: guild.level,
+      members,
       allies,
     };
+  }
+
+  async findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
+    const guilds = await this.guildRepository.find({
+      relations: [
+        'members',
+        'members.guild',
+        'members.guild.allies',
+        'allies',
+        'allies.members',
+      ],
+    });
+
+    return guilds
+      .filter((guild) => guild.allies.length < 3)
+      .map((guild) => this.toGuildSummaryDto(guild));
   }
 
   async findRecruitingGuilds(): Promise<GuildSummaryDto[]> {
@@ -79,44 +123,17 @@ export class GuildsService {
       .map((guild) => this.toGuildSummaryDto(guild));
   }
 
-  async findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
-    const guilds = await this.guildRepository.find({
-      relations: ['members', 'allies'],
+  async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
+    const logoBuffer: Buffer | null = createGuildDto.logo;
+
+    const guild = this.guildRepository.create({
+      ...createGuildDto,
+      logo: logoBuffer,
+      members: [creator],
     });
 
-    return guilds
-      .filter((guild) => guild.allies.length < 3)
-      .map((guild) => this.toGuildSummaryDto(guild));
-  }
-
-  toGuildSummaryDto(guild: Guild): GuildSummaryDto {
-    const leader: User = guild.members.find(
-      (member) => member.role === UserRole.LEADER,
-    );
-
-    const nbOfMembers: number = guild.members.length;
-    const averageLevelOfMembers: number =
-      nbOfMembers > 0
-        ? Math.round(
-            guild.members.reduce(
-              (sum, member) => sum + (member.characterLevel || 0),
-              0,
-            ) / nbOfMembers,
-          )
-        : 0;
-
-    return {
-      id: guild.id,
-      name: guild.name,
-      level: guild.level,
-      averageLevelOfMembers,
-      capacity: guild.capacity,
-      description: guild.description,
-      nbOfMembers: guild.members.length,
-      nbOfAllies: guild.allies.length,
-      leaderUsername: leader ? leader.username : 'Unknown',
-      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
-    };
+    await this.guildRepository.save(guild);
+    return guild;
   }
 
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {
@@ -147,5 +164,52 @@ export class GuildsService {
 
     guild.allies = guild.allies.filter((ally) => ally.id !== allyId);
     await this.guildRepository.save(guild);
+  }
+
+  toGuildSummaryDto(guild: Guild): GuildSummaryDto {
+    const leader = guild.members
+      ? guild.members.find((member) => member.role === UserRole.LEADER)
+      : null;
+
+    const nbOfMembers = guild.members ? guild.members.length : 0;
+    const averageLevelOfMembers =
+      nbOfMembers > 0
+        ? Math.round(
+            guild.members.reduce(
+              (sum, member) => sum + (member.characterLevel || 0),
+              0,
+            ) / nbOfMembers,
+          )
+        : 0;
+
+    return {
+      id: guild.id,
+      name: guild.name,
+      level: guild.level,
+      averageLevelOfMembers,
+      capacity: guild.capacity,
+      description: guild.description,
+      nbOfMembers,
+      nbOfAllies: guild.allies ? guild.allies.length : 0,
+      leaderUsername: leader ? leader.username : 'Unknown',
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
+    };
+  }
+
+  toMemberDto(user: User): MemberDto {
+    return {
+      id: user.id,
+      username: user.username,
+      characterClass: user.characterClass,
+      gender: user.gender,
+      characterLevel: user.characterLevel,
+      guild: {
+        id: user.guild.id,
+        name: user.guild.name,
+        description: user.guild.description,
+        level: user.guild.level,
+      },
+      role: user.role,
+    };
   }
 }

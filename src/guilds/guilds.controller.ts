@@ -27,15 +27,6 @@ export class GuildsController {
     private readonly usersService: UsersService,
   ) {}
 
-  @Get(':guildId/members')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MEMBER)
-  getGuildMembers(
-    @Param('guildId', ParseIntPipe) guildId: number,
-  ): Promise<User[]> {
-    return this.usersService.findMembersByGuild(guildId);
-  }
-
   @Get('current')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
@@ -49,8 +40,14 @@ export class GuildsController {
   }
 
   @Get('to-alliance')
-  findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
+  async findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
     return this.guildsService.findGuildsForAlliance();
+  }
+
+  @Get('validate-guild-code')
+  async validateGuildCode(@Query('code') code: string) {
+    const guildName = await this.guildCreationCodeService.validateCode(code);
+    return { guildName };
   }
 
   @Post('generate-creation-code')
@@ -58,9 +55,21 @@ export class GuildsController {
     return this.guildCreationCodeService.generateCode(body.guildName);
   }
 
-  @Get('validate-guild-code')
-  async validateGuildCode(@Query('code') code: string) {
-    const guildName = await this.guildCreationCodeService.validateCode(code);
-    return { guildName };
+  @Get(':guildId/members')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  getGuildMembers(
+    @Param('guildId', ParseIntPipe) guildId: number,
+  ): Promise<User[]> {
+    return this.usersService.findMembersByGuild(guildId);
+  }
+
+  @Get(':guildId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  getGuildById(
+    @Param('guildId', ParseIntPipe) guildId: number,
+  ): Promise<GuildDto> {
+    return this.guildsService.findById(guildId);
   }
 }

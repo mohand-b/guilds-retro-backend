@@ -1,4 +1,4 @@
-import { UserDto } from '../../users/dto/user.dto';
+import { MemberDto } from '../../users/dto/user.dto';
 
 export class GuildDto {
   id: number;
@@ -6,7 +6,7 @@ export class GuildDto {
   description: string;
   logo: any;
   level: number;
-  members: UserDto[];
+  members: MemberDto[];
   allies?: GuildSummaryDto[];
 }
 

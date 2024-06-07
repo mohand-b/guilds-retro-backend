@@ -68,8 +68,9 @@ export class GuildsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
   getGuildById(
+    @Req() req: any,
     @Param('guildId', ParseIntPipe) guildId: number,
-  ): Promise<GuildDto> {
-    return this.guildsService.findById(guildId);
+  ): Promise<GuildDto | GuildSummaryDto> {
+    return this.guildsService.findById(req.user.userId, guildId);
   }
 }

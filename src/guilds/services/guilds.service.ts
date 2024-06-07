@@ -8,6 +8,7 @@ import { GuildDto, GuildSummaryDto } from '../dto/guild.dto';
 import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
 import { MemberDto } from '../../users/dto/user.dto';
+import { CharacterClass } from '../../users/enum/character-class.enum';
 
 @Injectable()
 export class GuildsService {
@@ -25,9 +26,23 @@ export class GuildsService {
     });
   }
 
-  async findById(id: number): Promise<GuildDto> {
-    const guild = await this.guildRepository.findOne({
-      where: { id },
+  async findById(
+    userId: number,
+    guildId: number,
+  ): Promise<GuildDto | GuildSummaryDto> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['guild', 'guild.allies'],
+    });
+
+    if (!user || !user.guild) {
+      throw new NotFoundException(
+        'User not found or user is not part of any guild',
+      );
+    }
+
+    const targetGuild = await this.guildRepository.findOne({
+      where: { id: guildId },
       relations: [
         'members',
         'members.guild',
@@ -37,22 +52,49 @@ export class GuildsService {
       ],
     });
 
-    if (!guild) {
+    if (!targetGuild) {
       throw new NotFoundException('Guild not found');
     }
 
-    const members = guild.members.map((member) => this.toMemberDto(member));
-    const allies = guild.allies.map((ally) => this.toGuildSummaryDto(ally));
+    const memberClassesCount: Record<CharacterClass, number> = Object.values(
+      CharacterClass,
+    ).reduce(
+      (acc, key) => {
+        acc[key] = 0;
+        return acc;
+      },
+      {} as Record<CharacterClass, number>,
+    );
 
-    return {
-      id: guild.id,
-      name: guild.name,
-      description: guild.description,
-      logo: guild.logo,
-      level: guild.level,
-      members,
-      allies,
-    };
+    targetGuild.members.forEach((member) => {
+      if (member.characterClass in memberClassesCount) {
+        memberClassesCount[member.characterClass]++;
+      }
+    });
+
+    const isAlly = user.guild.allies.some((ally) => ally.id === targetGuild.id);
+
+    if (isAlly) {
+      const members = targetGuild.members.map((member) =>
+        this.toMemberDto(member),
+      );
+      const allies = targetGuild.allies.map((ally) =>
+        this.toGuildSummaryDto(ally),
+      );
+
+      return {
+        id: targetGuild.id,
+        name: targetGuild.name,
+        description: targetGuild.description,
+        logo: targetGuild.logo,
+        level: targetGuild.level,
+        members,
+        memberClassesCount,
+        allies,
+      };
+    } else {
+      return this.toGuildSummaryDto(targetGuild);
+    }
   }
 
   async findCurrentGuild(userId: number): Promise<GuildDto> {
@@ -85,6 +127,22 @@ export class GuildsService {
     const members = guild.members.map((member) => this.toMemberDto(member));
     const allies = guild.allies.map((ally) => this.toGuildSummaryDto(ally));
 
+    const memberClassesCount: Record<CharacterClass, number> = Object.values(
+      CharacterClass,
+    ).reduce(
+      (acc, key) => {
+        acc[key] = 0;
+        return acc;
+      },
+      {} as Record<CharacterClass, number>,
+    );
+
+    guild.members.forEach((member) => {
+      if (member.characterClass in memberClassesCount) {
+        memberClassesCount[member.characterClass]++;
+      }
+    });
+
     return {
       id: guild.id,
       name: guild.name,
@@ -92,6 +150,7 @@ export class GuildsService {
       logo: guild.logo,
       level: guild.level,
       members,
+      memberClassesCount,
       allies,
     };
   }
@@ -182,11 +241,28 @@ export class GuildsService {
           )
         : 0;
 
+    const memberClassesCount: Record<CharacterClass, number> = Object.values(
+      CharacterClass,
+    ).reduce(
+      (acc, key) => {
+        acc[key] = 0;
+        return acc;
+      },
+      {} as Record<CharacterClass, number>,
+    );
+
+    guild.members.forEach((member) => {
+      if (member.characterClass in memberClassesCount) {
+        memberClassesCount[member.characterClass]++;
+      }
+    });
+
     return {
       id: guild.id,
       name: guild.name,
       level: guild.level,
       averageLevelOfMembers,
+      memberClassesCount,
       capacity: guild.capacity,
       description: guild.description,
       nbOfMembers,

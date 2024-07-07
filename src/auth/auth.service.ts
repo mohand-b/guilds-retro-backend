@@ -12,6 +12,7 @@ import { JoinGuildMemberDto } from '../users/dto/join-guild-member.dto';
 import { User } from '../users/entities/user.entity';
 import { GuildCreationCodeService } from '../guilds/services/guild-creation-code.service';
 import { MembershipRequestDto } from '../membership-requests/dto/membership-request.dto';
+import { Guild } from '../guilds/entities/guild.entity';
 
 @Injectable()
 export class AuthService {
@@ -131,7 +132,7 @@ export class AuthService {
       ...userInfo,
       guild: guild,
       guildAlliesIds:
-        guild && guild.allies ? guild.allies.map((ally) => ally.id) : [],
+        guild && guild.allies ? guild.allies.map((ally: Guild) => ally.id) : [],
     };
 
     const requests: MembershipRequestDto[] =

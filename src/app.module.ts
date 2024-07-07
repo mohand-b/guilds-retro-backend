@@ -27,6 +27,9 @@ import { FeedModule } from './feed/feed.module';
         url: config.get<string>('DATABASE_URL'),
         synchronize: true,
         autoLoadEntities: true,
+        ssl: {
+          rejectUnauthorized: false,
+        },
       }),
       inject: [ConfigService],
     }),

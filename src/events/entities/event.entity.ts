@@ -4,6 +4,7 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -22,8 +23,29 @@ export class Event {
   @Column()
   type: string;
 
+  @Column({ nullable: true })
+  dungeonName?: string;
+
+  @Column({ nullable: true })
+  arenaTargets?: string;
+
   @CreateDateColumn()
   date: Date;
+
+  @Column()
+  maxParticipants: number;
+
+  @Column({ nullable: true })
+  minLevel?: number;
+
+  @Column({ type: 'simple-array', nullable: true })
+  requiredClasses?: string[];
+
+  @Column({ default: false })
+  requiresOptimization?: boolean;
+
+  @ManyToOne(() => User, { eager: true })
+  creator: User;
 
   @ManyToMany(() => User)
   @JoinTable()

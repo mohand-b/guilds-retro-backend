@@ -251,11 +251,13 @@ export class GuildsService {
       {} as Record<CharacterClass, number>,
     );
 
-    guild.members.forEach((member) => {
-      if (member.characterClass in memberClassesCount) {
-        memberClassesCount[member.characterClass]++;
-      }
-    });
+    if (guild.members) {
+      guild.members.forEach((member) => {
+        if (member.characterClass in memberClassesCount) {
+          memberClassesCount[member.characterClass]++;
+        }
+      });
+    }
 
     return {
       id: guild.id,

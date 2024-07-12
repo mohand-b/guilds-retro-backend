@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Event } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { JoinEventDto } from './dto/join-event.dto';
@@ -50,23 +50,23 @@ export class EventsService {
       );
     }
 
-    const guildIds: number[] = [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const guildIds = [
       user.guild.id,
       ...user.guild.allies.map((guild) => guild.id),
     ];
 
-    return this.eventsRepository.find({
-      where: [
-        { creator: { guild: { id: In(guildIds) } } },
-        {
-          isAccessibleToAllies: true,
-          creator: {
-            guild: { id: In(user.guild.allies.map((guild) => guild.id)) },
-          },
-        },
-      ],
-      relations: ['participants', 'creator'],
-    });
+    return this.eventsRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.participants', 'participants')
+      .leftJoinAndSelect('event.creator', 'creator')
+      .leftJoinAndSelect('creator.guild', 'creatorGuild')
+      .where('creatorGuild.id IN (:...guildIds)', { guildIds: [user.guild.id] })
+      .orWhere(
+        'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
+        { allyGuildIds: user.guild.allies.map((guild) => guild.id) },
+      )
+      .getMany();
   }
 
   async joinEvent(joinEventDto: JoinEventDto): Promise<Event> {

@@ -28,7 +28,7 @@ export class EventsController {
     return this.eventsService.getEvents();
   }
 
-  @Get()
+  @Get('accessible')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
   getAccessibleEvents(@Req() req: any): Promise<Event[]> {

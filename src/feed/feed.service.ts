@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PostEntity } from '../posts/entities/post.entity';
 import { In, Not, Repository } from 'typeorm';
+import { PostEntity } from '../posts/entities/post.entity';
 import { User } from '../users/entities/user.entity';
+import { EventsService } from '../events/events.service';
+import { PostFeedDto } from '../posts/dto/post-feed.dto';
+import { EventFeedDto } from '../events/dto/event-feed.dto';
 
 @Injectable()
 export class FeedService {
@@ -11,9 +14,10 @@ export class FeedService {
     private postRepository: Repository<PostEntity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private eventsService: EventsService,
   ) {}
 
-  async getFeed(userId: number): Promise<PostEntity[]> {
+  async getFeed(userId: number): Promise<(PostFeedDto | EventFeedDto)[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild', 'guild.allies'],
@@ -72,6 +76,22 @@ export class FeedService {
       });
     }
 
-    return posts;
+    const events = await this.eventsService.getAccessibleEvents(userId);
+
+    const postDtos: PostFeedDto[] = posts.map((post) => ({
+      ...post,
+      feedType: 'post',
+    }));
+
+    const eventDtos: EventFeedDto[] = events.map((event) => ({
+      ...event,
+      feedType: 'event',
+    }));
+
+    return [...postDtos, ...eventDtos].sort((a, b) => {
+      const dateA = a.createdAt;
+      const dateB = b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 }

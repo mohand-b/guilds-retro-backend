@@ -7,7 +7,8 @@ import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Event]), UsersModule],
-  controllers: [EventsController],
   providers: [EventsService],
+  controllers: [EventsController],
+  exports: [EventsService, TypeOrmModule],
 })
 export class EventsModule {}

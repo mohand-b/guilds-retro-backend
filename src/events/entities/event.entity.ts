@@ -53,4 +53,7 @@ export class Event {
 
   @Column({ default: false })
   isAccessibleToAllies: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

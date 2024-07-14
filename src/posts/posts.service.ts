@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
 import { Repository } from 'typeorm';
+import { PostFeedDto } from './dto/post-feed.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 
 @Injectable()
@@ -11,7 +12,10 @@ export class PostsService {
     private postRepository: Repository<PostEntity>,
   ) {}
 
-  async create(createPostDto: CreatePostDto, userId): Promise<PostEntity> {
+  async create(
+    createPostDto: CreatePostDto,
+    userId: number,
+  ): Promise<PostFeedDto> {
     const post = this.postRepository.create({
       ...createPostDto,
       user: { id: userId } as any,
@@ -19,7 +23,7 @@ export class PostsService {
 
     const savedPost = await this.postRepository.save(post);
 
-    return this.postRepository.findOne({
+    const completePost = await this.postRepository.findOne({
       where: { id: savedPost.id },
       relations: [
         'user',
@@ -30,6 +34,8 @@ export class PostsService {
         'comments.user',
       ],
     });
+
+    return this.toPostFeedDto(completePost);
   }
 
   async delete(id: number): Promise<void> {
@@ -41,5 +47,20 @@ export class PostsService {
       where: { id },
       relations: ['user', 'likes', 'comments', 'likes.user', 'comments.user'],
     });
+  }
+
+  private toPostFeedDto(post: PostEntity): PostFeedDto {
+    return {
+      feedId: `post-${post.id}`,
+      id: post.id,
+      text: post.text,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      image: post.image,
+      feedType: 'post',
+      user: post.user,
+      comments: post.comments,
+      likes: post.likes,
+    };
   }
 }

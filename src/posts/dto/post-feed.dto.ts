@@ -11,5 +11,6 @@ export class PostFeedDto {
   createdAt: Date;
   updatedAt: Date;
   image: Buffer;
+  feedId: string;
   feedType: string = 'post';
 }

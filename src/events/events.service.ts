@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Event } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
-import { JoinEventDto } from './dto/join-event.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
+import { EventFeedDto } from './dto/event-feed.dto';
 
 @Injectable()
 export class EventsService {
@@ -69,9 +69,7 @@ export class EventsService {
       .getMany();
   }
 
-  async joinEvent(joinEventDto: JoinEventDto): Promise<Event> {
-    const { userId, eventId } = joinEventDto;
-
+  async joinEvent(eventId: number, userId: number): Promise<EventFeedDto> {
     const event: Event = await this.eventsRepository.findOne({
       where: { id: eventId },
       relations: ['participants'],
@@ -91,6 +89,42 @@ export class EventsService {
     }
 
     event.participants.push(user);
-    return this.eventsRepository.save(event);
+    const savedEvent = await this.eventsRepository.save(event);
+
+    return {
+      ...savedEvent,
+      feedType: 'event',
+      feedId: `event-${savedEvent.id}`,
+    };
+  }
+
+  async withdrawFromEvent(
+    eventId: number,
+    userId: number,
+  ): Promise<EventFeedDto> {
+    const event: Event = await this.eventsRepository.findOne({
+      where: { id: eventId },
+      relations: ['participants'],
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const user: User = await this.usersService.findOneById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    event.participants = event.participants.filter(
+      (participant) => participant.id !== userId,
+    );
+    const savedEvent = await this.eventsRepository.save(event);
+
+    return {
+      ...savedEvent,
+      feedType: 'event',
+      feedId: `event-${savedEvent.id}`,
+    };
   }
 }

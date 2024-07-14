@@ -80,11 +80,13 @@ export class FeedService {
 
     const postDtos: PostFeedDto[] = posts.map((post) => ({
       ...post,
+      feedId: `post-${post.id}`,
       feedType: 'post',
     }));
 
     const eventDtos: EventFeedDto[] = events.map((event) => ({
       ...event,
+      feedId: `event-${event.id}`,
       feedType: 'event',
     }));
 

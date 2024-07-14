@@ -15,5 +15,6 @@ export class EventFeedDto {
   participants: User[];
   isAccessibleToAllies: boolean;
   createdAt: Date;
+  feedId: string;
   feedType: string = 'event';
 }

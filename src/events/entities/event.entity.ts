@@ -15,12 +15,6 @@ export class Event {
   id: number;
 
   @Column()
-  title: string;
-
-  @Column({ type: 'text' })
-  description: string;
-
-  @Column()
   type: string;
 
   @Column({ nullable: true })
@@ -28,6 +22,12 @@ export class Event {
 
   @Column({ nullable: true })
   arenaTargets?: string;
+
+  @Column({ nullable: true })
+  title?: string;
+
+  @Column({ type: 'text' })
+  description: string;
 
   @CreateDateColumn()
   date: Date;

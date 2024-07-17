@@ -11,15 +11,11 @@ import {
 export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @IsString()
-  @IsNotEmpty()
   type: string;
+
+  @IsOptional()
+  @IsString()
+  title: string;
 
   @IsOptional()
   @IsString()
@@ -28,6 +24,10 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   arenaTargets?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
 
   @IsDateString()
   @IsNotEmpty()
@@ -49,4 +49,8 @@ export class CreateEventDto {
   @IsOptional()
   @IsBoolean()
   requiresOptimization?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isAccessibleToAllies?: boolean;
 }

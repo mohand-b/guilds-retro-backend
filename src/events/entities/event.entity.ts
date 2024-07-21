@@ -26,7 +26,7 @@ export class Event {
   @Column({ nullable: true })
   title?: string;
 
-  @Column({ type: 'text' })
+  @Column({ nullable: true })
   description: string;
 
   @CreateDateColumn()

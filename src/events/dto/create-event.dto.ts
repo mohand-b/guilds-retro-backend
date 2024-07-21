@@ -25,8 +25,8 @@ export class CreateEventDto {
   @IsString()
   arenaTargets?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   description: string;
 
   @IsDateString()

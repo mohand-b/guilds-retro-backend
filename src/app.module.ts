@@ -13,6 +13,7 @@ import { PostsModule } from './posts/posts.module';
 import { CommentsModule } from './comments/comments.module';
 import { LikesModule } from './likes/likes.module';
 import { FeedModule } from './feed/feed.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { FeedModule } from './feed/feed.module';
     CommentsModule,
     LikesModule,
     FeedModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

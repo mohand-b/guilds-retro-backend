@@ -25,5 +25,5 @@ export class Notification {
   createdAt: Date;
 
   @Column({ default: false })
-  isRead: boolean;
+  read: boolean;
 }

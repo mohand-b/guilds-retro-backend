@@ -30,7 +30,7 @@ export class NotificationsService {
       type,
       message,
       createdAt: new Date(),
-      isRead: false,
+      read: false,
     });
 
     const savedNotification: Notification =

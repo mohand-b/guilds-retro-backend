@@ -14,6 +14,7 @@ import { Gender } from '../enum/gender.enum';
 import { PostEntity } from '../../posts/entities/post.entity';
 import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
+import { Notification } from '../../notifications/entities/notification.entity';
 
 @Entity()
 export class User {
@@ -68,6 +69,9 @@ export class User {
 
   @OneToMany(() => Like, (like) => like.user)
   likes: Like[];
+
+  @OneToMany(() => Notification, (notification) => notification.user)
+  notifications: Notification[];
 
   @Column({ default: false })
   feedClosingToGuildAndAllies: boolean;

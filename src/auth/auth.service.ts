@@ -34,7 +34,7 @@ export class AuthService {
 
     const user = await this.usersService.create({
       ...userData,
-      username: userData.username.toLowerCase(), // convert the username to lowercase
+      username: userData.username.toLowerCase(),
       password: hashedPassword,
     });
 
@@ -77,7 +77,7 @@ export class AuthService {
 
     const user = await this.usersService.create({
       ...userData,
-      username: userData.username.toLowerCase(), // convert the username to lowercase
+      username: userData.username.toLowerCase(),
       password: hashedPassword,
     });
 

@@ -44,11 +44,13 @@ export class LikesService {
 
     const like = this.likeRepository.create({ user, post });
 
-    await this.notificationsService.createNotification(
-      post.user.id,
-      'like',
-      `Ton post a été liké par ${user.username}`,
-    );
+    if (post.user.id !== userId) {
+      await this.notificationsService.createNotification(
+        post.user.id,
+        'like',
+        `Ton post a été liké par ${user.username}`,
+      );
+    }
 
     return this.likeRepository.save(like);
   }

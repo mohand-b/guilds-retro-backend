@@ -30,4 +30,10 @@ export class NotificationGateway
   notifyUser(userId: number, notification: any) {
     this.server.to(`user-${userId}`).emit('notification', notification);
   }
+
+  cancelNotification(userId: number, notificationId: number) {
+    this.server
+      .to(`user-${userId}`)
+      .emit('cancel-notification', notificationId);
+  }
 }

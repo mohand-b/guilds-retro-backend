@@ -1,6 +1,7 @@
-import { Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
+import { Notification } from '../../notifications/entities/notification.entity';
 
 @Entity()
 export class Like {
@@ -12,4 +13,7 @@ export class Like {
 
   @ManyToOne(() => PostEntity, (post) => post.likes)
   post: PostEntity;
+
+  @OneToMany(() => Notification, (notification) => notification.like)
+  notifications: Notification[];
 }

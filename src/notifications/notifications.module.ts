@@ -5,9 +5,10 @@ import { Notification } from './entities/notification.entity';
 import { NotificationGateway } from './notification.gateway';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
+import { Like } from '../likes/entities/like.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification]), UsersModule],
+  imports: [TypeOrmModule.forFeature([Notification, Like]), UsersModule],
   providers: [NotificationsService, NotificationGateway],
   controllers: [NotificationsController],
   exports: [NotificationsService],

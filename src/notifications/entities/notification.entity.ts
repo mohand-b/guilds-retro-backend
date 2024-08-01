@@ -1,3 +1,4 @@
+import { Like } from 'src/likes/entities/like.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,
@@ -26,4 +27,7 @@ export class Notification {
 
   @Column({ default: false })
   read: boolean;
+
+  @ManyToOne(() => Like, (like) => like.notifications, { nullable: true })
+  like?: Like;
 }

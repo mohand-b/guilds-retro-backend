@@ -76,7 +76,6 @@ export class MembershipRequestsController {
   async findPendingRequestsForUser(
     @Req() req: any,
   ): Promise<MembershipRequestDto[]> {
-    console.log(req.user.userId);
     return await this.membershipRequestsService.findRequestsForUser(
       req.user.userId,
     );

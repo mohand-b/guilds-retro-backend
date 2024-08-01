@@ -44,25 +44,30 @@ export class LikesService {
 
     const like = this.likeRepository.create({ user, post });
 
+    const savedLike = await this.likeRepository.save(like);
+
     if (post.user.id !== userId) {
       await this.notificationsService.createNotification(
         post.user.id,
         'like',
         `Ton post a été liké par ${user.username}`,
+        savedLike.id,
       );
     }
 
-    return this.likeRepository.save(like);
+    return savedLike;
   }
 
   async unlikePost(userId: number, postId: number): Promise<void> {
     const like = await this.likeRepository.findOne({
       where: { user: { id: userId }, post: { id: postId } },
     });
+
     if (!like) {
       throw new NotFoundException('Like not found');
     }
 
+    await this.notificationsService.cancelNotificationByLike(like.id);
     await this.likeRepository.remove(like);
   }
 

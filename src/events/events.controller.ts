@@ -43,8 +43,6 @@ export class EventsController {
     @Body('eventId') eventId: number,
     @Req() req: any,
   ): Promise<EventFeedDto> {
-    console.log('req', req.user);
-
     const userId = req.user.userId;
     return this.eventsService.joinEvent(eventId, userId);
   }

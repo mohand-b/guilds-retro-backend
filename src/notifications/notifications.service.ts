@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -96,5 +96,26 @@ export class NotificationsService {
       where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async markNotificationsAsRead(
+    notificationIds: number[],
+  ): Promise<Notification[]> {
+    const notifications = await this.notificationRepository.findBy({
+      id: In(notificationIds),
+    });
+
+    if (!notifications.length) {
+      throw new Error('Notifications not found');
+    }
+
+    const updatedNotifications = notifications.map((notification) => {
+      if (!notification.read) {
+        notification.read = true;
+      }
+      return notification;
+    });
+
+    return this.notificationRepository.save(updatedNotifications);
   }
 }

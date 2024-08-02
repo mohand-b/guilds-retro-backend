@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Notification } from './entities/notification.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -8,12 +8,21 @@ import { UserRole } from '../users/enum/user-role.enum';
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
   getNotifications(@Req() req: any): Promise<Notification[]> {
-    return this.notificationService.getNotificationsForUser(req.user.userId);
+    return this.notificationsService.getNotificationsForUser(req.user.userId);
+  }
+
+  @Patch('mark-as-read')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  async markNotificationsAsRead(
+    @Body('notificationIds') notificationIds: number[],
+  ): Promise<Notification[]> {
+    return this.notificationsService.markNotificationsAsRead(notificationIds);
   }
 }

@@ -7,6 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Event } from '../../events/entities/event.entity';
 
 @Entity()
 export class Notification {
@@ -30,4 +31,7 @@ export class Notification {
 
   @ManyToOne(() => Like, (like) => like.notifications, { nullable: true })
   like?: Like;
+
+  @ManyToOne(() => Event, (event) => event.notifications, { nullable: true })
+  event?: Event;
 }

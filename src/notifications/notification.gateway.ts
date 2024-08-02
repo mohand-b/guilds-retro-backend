@@ -32,6 +32,8 @@ export class NotificationGateway
   }
 
   cancelNotification(userId: number, notificationId: number) {
+    console.log('Cancel notification:', notificationId);
+    console.log('User:', userId);
     this.server
       .to(`user-${userId}`)
       .emit('cancel-notification', notificationId);

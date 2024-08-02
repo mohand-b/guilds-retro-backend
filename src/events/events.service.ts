@@ -6,6 +6,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { EventFeedDto } from './dto/event-feed.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EventsService {
@@ -13,6 +14,7 @@ export class EventsService {
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
     private usersService: UsersService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createEvent(
@@ -96,6 +98,14 @@ export class EventsService {
     event.participants.push(user);
     const savedEvent = await this.eventsRepository.save(event);
 
+    await this.notificationsService.createNotification(
+      savedEvent.creator.id,
+      'event',
+      `${user.username} a rejoint ton événement`,
+      undefined,
+      savedEvent.id,
+    );
+
     return {
       ...savedEvent,
       feedType: 'event',
@@ -125,6 +135,8 @@ export class EventsService {
       (participant) => participant.id !== userId,
     );
     const savedEvent = await this.eventsRepository.save(event);
+
+    await this.notificationsService.cancelNotificationByEvent(savedEvent.id);
 
     return {
       ...savedEvent,

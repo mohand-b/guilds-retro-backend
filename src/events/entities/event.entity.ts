@@ -5,9 +5,11 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Notification } from '../../notifications/entities/notification.entity';
 
 @Entity()
 export class Event {
@@ -56,4 +58,7 @@ export class Event {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => Notification, (notification) => notification.event)
+  notifications: Notification[];
 }

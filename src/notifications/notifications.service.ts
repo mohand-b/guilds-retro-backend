@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { NotificationGateway } from './notification.gateway';
 import { Like } from '../likes/entities/like.entity';
+import { Event } from '../events/entities/event.entity';
 
 @Injectable()
 export class NotificationsService {
@@ -14,6 +15,8 @@ export class NotificationsService {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(Like)
     private readonly likeRepository: Repository<Like>,
+    @InjectRepository(Event)
+    private readonly eventRepository: Repository<Event>,
     private readonly usersService: UsersService,
     private readonly notificationGateway: NotificationGateway,
   ) {}
@@ -23,6 +26,7 @@ export class NotificationsService {
     type: string,
     message: string,
     likeId?: number,
+    eventId?: number,
   ): Promise<Notification> {
     const user: User = await this.usersService.findOneById(userId);
     if (!user) {
@@ -33,6 +37,10 @@ export class NotificationsService {
       ? await this.likeRepository.findOne({ where: { id: likeId } })
       : null;
 
+    const event = eventId
+      ? await this.eventRepository.findOne({ where: { id: eventId } })
+      : null;
+
     const notification: Notification = this.notificationRepository.create({
       user,
       type,
@@ -40,6 +48,7 @@ export class NotificationsService {
       createdAt: new Date(),
       read: false,
       like,
+      event,
     });
 
     const savedNotification: Notification =
@@ -53,6 +62,22 @@ export class NotificationsService {
   async cancelNotificationByLike(likeId: number) {
     const notification = await this.notificationRepository.findOne({
       where: { like: { id: likeId } },
+      relations: ['user'],
+    });
+
+    if (notification) {
+      const notificationId = notification.id;
+      await this.notificationRepository.remove(notification);
+      this.notificationGateway.cancelNotification(
+        notification.user.id,
+        notificationId,
+      );
+    }
+  }
+
+  async cancelNotificationByEvent(eventId: number) {
+    const notification = await this.notificationRepository.findOne({
+      where: { event: { id: eventId } },
       relations: ['user'],
     });
 

@@ -52,28 +52,28 @@ export class EventsService {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const guildIds: number[] = [
-      user.guild.id,
-      ...user.guild.allies.map((guild) => guild.id),
-    ];
+    const guildIds = [user.guild.id];
+    const allyGuildIds = user.guild.allies.map((guild) => guild.id);
 
     const sixMonthsAgo: Date = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    return this.eventsRepository
+    const queryBuilder = this.eventsRepository
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.participants', 'participants')
       .leftJoinAndSelect('event.creator', 'creator')
       .leftJoinAndSelect('creator.guild', 'creatorGuild')
-      .where('creatorGuild.id IN (:...guildIds)', { guildIds: [user.guild.id] })
-      .orWhere(
+      .where('creatorGuild.id IN (:...guildIds)', { guildIds })
+      .andWhere('event.date >= :sixMonthsAgo', { sixMonthsAgo });
+
+    if (allyGuildIds.length > 0) {
+      queryBuilder.orWhere(
         'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
-        { allyGuildIds: user.guild.allies.map((guild) => guild.id) },
-      )
-      .andWhere('event.date >= :sixMonthsAgo', { sixMonthsAgo })
-      .orderBy('event.date', 'DESC')
-      .getMany();
+        { allyGuildIds },
+      );
+    }
+
+    return queryBuilder.orderBy('event.date', 'DESC').getMany();
   }
 
   async joinEvent(eventId: number, userId: number): Promise<EventFeedDto> {

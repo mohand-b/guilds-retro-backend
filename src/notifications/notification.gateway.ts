@@ -28,6 +28,7 @@ export class NotificationGateway
   }
 
   notifyUser(userId: number, notification: any) {
+    console.log('Notify user:', userId);
     this.server.to(`user-${userId}`).emit('notification', notification);
   }
 

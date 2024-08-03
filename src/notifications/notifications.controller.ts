@@ -12,14 +12,14 @@ export class NotificationsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MEMBER)
+  @Roles(UserRole.CANDIDATE)
   getNotifications(@Req() req: any): Promise<Notification[]> {
     return this.notificationsService.getNotificationsForUser(req.user.userId);
   }
 
   @Patch('mark-as-read')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MEMBER)
+  @Roles(UserRole.CANDIDATE)
   async markNotificationsAsRead(
     @Body('notificationIds') notificationIds: number[],
   ): Promise<Notification[]> {

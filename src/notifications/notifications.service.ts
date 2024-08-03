@@ -54,6 +54,7 @@ export class NotificationsService {
     const savedNotification: Notification =
       await this.notificationRepository.save(notification);
 
+    console.log('usernotify', userId, savedNotification.user.username);
     this.notificationGateway.notifyUser(userId, savedNotification);
 
     return savedNotification;

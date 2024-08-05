@@ -2,28 +2,30 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
 import { Repository } from 'typeorm';
-import { PostFeedDto } from './dto/post-feed.dto';
 import { CreatePostDto } from './dto/create-post.dto';
+import { FeedEntity } from '../feed/entities/feed.entity';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(PostEntity)
     private postRepository: Repository<PostEntity>,
+    @InjectRepository(FeedEntity)
+    private feedRepository: Repository<FeedEntity>,
   ) {}
 
   async create(
     createPostDto: CreatePostDto,
     userId: number,
-  ): Promise<PostFeedDto> {
-    const post = this.postRepository.create({
+  ): Promise<FeedEntity> {
+    const post: PostEntity = this.postRepository.create({
       ...createPostDto,
       user: { id: userId } as any,
     });
 
-    const savedPost = await this.postRepository.save(post);
+    const savedPost: PostEntity = await this.postRepository.save(post);
 
-    const completePost = await this.postRepository.findOne({
+    const completePost: PostEntity = await this.postRepository.findOne({
       where: { id: savedPost.id },
       relations: [
         'user',
@@ -35,7 +37,15 @@ export class PostsService {
       ],
     });
 
-    return this.toPostFeedDto(completePost);
+    if (completePost) {
+      const feedEntry: FeedEntity = this.feedRepository.create({
+        post: completePost,
+        createdAt: new Date(),
+      });
+      return this.feedRepository.save(feedEntry);
+    }
+
+    throw new Error('Post creation failed');
   }
 
   async delete(id: number): Promise<void> {
@@ -47,20 +57,5 @@ export class PostsService {
       where: { id },
       relations: ['user', 'likes', 'comments', 'likes.user', 'comments.user'],
     });
-  }
-
-  private toPostFeedDto(post: PostEntity): PostFeedDto {
-    return {
-      feedId: `post-${post.id}`,
-      id: post.id,
-      text: post.text,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      image: post.image,
-      feedType: 'post',
-      user: post.user,
-      comments: post.comments,
-      likes: post.likes,
-    };
   }
 }

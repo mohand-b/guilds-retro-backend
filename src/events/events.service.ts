@@ -7,32 +7,51 @@ import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { EventFeedDto } from './dto/event-feed.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FeedEntity } from '../feed/entities/feed.entity';
 
 @Injectable()
 export class EventsService {
   constructor(
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
+    @InjectRepository(FeedEntity)
+    private feedRepository: Repository<FeedEntity>,
     private usersService: UsersService,
     private notificationsService: NotificationsService,
   ) {}
 
+  // events.service.ts
   async createEvent(
     createEventDto: CreateEventDto,
     creatorId: number,
   ): Promise<Event> {
-    const creator: User = await this.usersService.findOneById(creatorId);
+    const creator = await this.usersService.findOneById(creatorId);
     if (!creator) {
       throw new NotFoundException('User not found');
     }
 
-    const event: Event = this.eventsRepository.create({
+    const event = this.eventsRepository.create({
       ...createEventDto,
       creator,
       participants: [creator],
     });
 
-    return this.eventsRepository.save(event);
+    const savedEvent = await this.eventsRepository.save(event);
+
+    const completeEvent = await this.eventsRepository.findOne({
+      where: { id: savedEvent.id },
+      relations: ['creator', 'participants'],
+    });
+
+    if (completeEvent) {
+      const feedEntry = this.feedRepository.create({
+        event: completeEvent,
+        createdAt: new Date(),
+      });
+      await this.feedRepository.save(feedEntry);
+    }
+
+    return completeEvent;
   }
 
   async getEvents(): Promise<Event[]> {

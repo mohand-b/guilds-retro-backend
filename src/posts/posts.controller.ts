@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/enum/user-role.enum';
 import { Roles } from '../common/decorators/roles.decorator';
+import { FeedEntity } from '../feed/entities/feed.entity';
 
 @Controller('posts')
 export class PostsController {
@@ -31,7 +32,7 @@ export class PostsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() createPostDto: CreatePostDto,
     @Req() req: any,
-  ): Promise<PostEntity> {
+  ): Promise<FeedEntity> {
     if (file && file.buffer) {
       createPostDto.image = file.buffer;
     }

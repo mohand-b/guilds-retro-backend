@@ -2,14 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
+import { FeedEntity } from '../../feed/entities/feed.entity';
 
 @Entity()
 export class Event {
@@ -58,6 +61,10 @@ export class Event {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToOne(() => FeedEntity, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'feedId' })
+  feed: FeedEntity;
 
   @OneToMany(() => Notification, (notification) => notification.event)
   notifications: Notification[];

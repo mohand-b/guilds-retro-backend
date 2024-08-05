@@ -2,14 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
+import { FeedEntity } from '../../feed/entities/feed.entity';
 
 @Entity()
 export class PostEntity {
@@ -21,6 +24,10 @@ export class PostEntity {
 
   @ManyToOne(() => User, (user) => user.posts)
   user: User;
+
+  @OneToOne(() => FeedEntity, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'feedId' })
+  feed: FeedEntity;
 
   @OneToMany(() => Comment, (comment) => comment.post, {
     cascade: true,

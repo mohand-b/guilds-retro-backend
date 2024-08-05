@@ -5,10 +5,11 @@ import { EventsService } from './events.service';
 import { Event } from './entities/event.entity';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { FeedEntity } from '../feed/entities/feed.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Event]),
+    TypeOrmModule.forFeature([Event, FeedEntity]),
     UsersModule,
     NotificationsModule,
   ],

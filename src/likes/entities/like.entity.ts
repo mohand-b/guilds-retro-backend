@@ -11,9 +11,12 @@ export class Like {
   @ManyToOne(() => User, (user) => user.likes)
   user: User;
 
-  @ManyToOne(() => PostEntity, (post) => post.likes)
+  @ManyToOne(() => PostEntity, (post) => post.likes, { onDelete: 'CASCADE' })
   post: PostEntity;
 
-  @OneToMany(() => Notification, (notification) => notification.like)
+  @OneToMany(() => Notification, (notification) => notification.like, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   notifications: Notification[];
 }

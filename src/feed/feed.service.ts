@@ -6,6 +6,7 @@ import { User } from '../users/entities/user.entity';
 import { EventsService } from '../events/events.service';
 import { PostFeedDto } from '../posts/dto/post-feed.dto';
 import { EventFeedDto } from '../events/dto/event-feed.dto';
+import { Event } from '../events/entities/event.entity';
 
 @Injectable()
 export class FeedService {
@@ -17,8 +18,12 @@ export class FeedService {
     private eventsService: EventsService,
   ) {}
 
-  async getFeed(userId: number): Promise<(PostFeedDto | EventFeedDto)[]> {
-    const user = await this.userRepository.findOne({
+  async getFeed(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<(PostFeedDto | EventFeedDto)[]> {
+    const user: User = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild', 'guild.allies'],
     });
@@ -76,7 +81,8 @@ export class FeedService {
       });
     }
 
-    const events = await this.eventsService.getAccessibleEvents(userId);
+    const events: Event[] =
+      await this.eventsService.getAccessibleEvents(userId);
 
     const postDtos: PostFeedDto[] = posts.map((post) => ({
       ...post,
@@ -90,10 +96,17 @@ export class FeedService {
       feedType: 'event',
     }));
 
-    return [...postDtos, ...eventDtos].sort((a, b) => {
-      const dateA = a.createdAt;
-      const dateB = b.createdAt;
-      return dateB.getTime() - dateA.getTime();
+    const allItems: (PostFeedDto | EventFeedDto)[] = [
+      ...postDtos,
+      ...eventDtos,
+    ].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
     });
+
+    const skip: number = (page - 1) * limit;
+
+    return allItems.slice(skip, skip + limit);
   }
 }

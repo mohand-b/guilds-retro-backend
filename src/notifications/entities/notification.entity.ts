@@ -29,9 +29,15 @@ export class Notification {
   @Column({ default: false })
   read: boolean;
 
-  @ManyToOne(() => Like, (like) => like.notifications, { nullable: true })
+  @ManyToOne(() => Like, (like) => like.notifications, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   like?: Like;
 
-  @ManyToOne(() => Event, (event) => event.notifications, { nullable: true })
+  @ManyToOne(() => Event, (event) => event.notifications, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   event?: Event;
 }

@@ -39,7 +39,8 @@ export class PostsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
   deletePost(@Param('id') id: number): Promise<void> {
     return this.postsService.delete(id);
   }

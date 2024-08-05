@@ -81,6 +81,8 @@ export class AuthService {
       password: hashedPassword,
     });
 
+    user.role = UserRole.CANDIDATE;
+
     const guild = await this.guildsService.findOne(guildId);
     if (!guild) {
       throw new Error('Guild not found');
@@ -91,10 +93,14 @@ export class AuthService {
       guildId,
     );
 
-    const payload = { username: user.username, sub: user.id };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+    };
     const token = this.jwtService.sign(payload);
 
-    return { user: user, token };
+    return { user, token };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {

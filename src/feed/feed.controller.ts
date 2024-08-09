@@ -17,7 +17,12 @@ export class FeedController {
     @Req() req: any,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-  ): Promise<FeedEntity[]> {
+  ): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    data: FeedEntity[];
+  }> {
     return this.feedService.getFeed(req.user.userId, page, limit);
   }
 }

@@ -17,7 +17,12 @@ export class FeedService {
     userId: number,
     page: number = 1,
     limit: number = 10,
-  ): Promise<FeedEntity[]> {
+  ): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    data: FeedEntity[];
+  }> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild', 'guild.allies'],
@@ -60,13 +65,18 @@ export class FeedService {
       { guildIds, userGuildId: user.guild.id },
     );
 
-    const allResults: FeedEntity[] = await query.getMany();
+    const [allResults, total] = await query.getManyAndCount();
 
     const paginatedResults: FeedEntity[] = allResults.slice(
       (page - 1) * limit,
       page * limit,
     );
 
-    return paginatedResults;
+    return {
+      total,
+      page,
+      limit,
+      data: paginatedResults,
+    };
   }
 }

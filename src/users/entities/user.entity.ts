@@ -15,6 +15,7 @@ import { PostEntity } from '../../posts/entities/post.entity';
 import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
+import { Job } from './job.entity';
 
 @Entity()
 export class User {
@@ -78,4 +79,7 @@ export class User {
 
   @Column({ default: true })
   showInRegistry: boolean;
+
+  @OneToMany(() => Job, (job) => job.user, { cascade: true, eager: true })
+  jobs: Job[];
 }

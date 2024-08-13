@@ -48,10 +48,20 @@ export class AlliancesService {
 
     const existingRequest = await this.allianceRepository.findOne({
       where: [
-        { requesterGuild: requesterGuild, targetGuild: targetGuild },
-        { requesterGuild: targetGuild, targetGuild: requesterGuild },
+        {
+          requesterGuild: requesterGuild,
+          targetGuild: targetGuild,
+          status: 'PENDING',
+        },
+        {
+          requesterGuild: targetGuild,
+          targetGuild: requesterGuild,
+          status: 'PENDING',
+        },
       ],
     });
+
+    console.log(existingRequest);
 
     if (existingRequest && existingRequest.status === 'PENDING') {
       throw new BadRequestException(

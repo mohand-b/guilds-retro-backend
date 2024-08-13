@@ -75,4 +75,7 @@ export class User {
 
   @Column({ default: false })
   feedClosingToGuildAndAllies: boolean;
+
+  @Column({ default: true })
+  showInRegistry: boolean;
 }

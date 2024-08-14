@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
@@ -7,6 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { NotificationGateway } from './notification.gateway';
 import { Like } from '../likes/entities/like.entity';
 import { Event } from '../events/entities/event.entity';
+import { AccountLinkRequest } from '../users/entities/account-link-request.entity';
 
 @Injectable()
 export class NotificationsService {
@@ -17,6 +18,9 @@ export class NotificationsService {
     private readonly likeRepository: Repository<Like>,
     @InjectRepository(Event)
     private readonly eventRepository: Repository<Event>,
+    @InjectRepository(AccountLinkRequest)
+    private readonly accountLinkRequestRepository: Repository<AccountLinkRequest>,
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     private readonly notificationGateway: NotificationGateway,
   ) {}
@@ -27,6 +31,7 @@ export class NotificationsService {
     message: string,
     likeId?: number,
     eventId?: number,
+    accountLinkRequestId?: number,
   ): Promise<Notification> {
     const user: User = await this.usersService.findOneById(userId);
     if (!user) {
@@ -41,6 +46,12 @@ export class NotificationsService {
       ? await this.eventRepository.findOne({ where: { id: eventId } })
       : null;
 
+    const accountLinkRequest = accountLinkRequestId
+      ? await this.accountLinkRequestRepository.findOne({
+          where: { id: accountLinkRequestId },
+        })
+      : null;
+
     const notification: Notification = this.notificationRepository.create({
       user,
       type,
@@ -49,12 +60,12 @@ export class NotificationsService {
       read: false,
       like,
       event,
+      accountLinkRequest,
     });
 
     const savedNotification: Notification =
       await this.notificationRepository.save(notification);
 
-    console.log('usernotify', userId, savedNotification.user.username);
     this.notificationGateway.notifyUser(userId, savedNotification);
 
     return savedNotification;

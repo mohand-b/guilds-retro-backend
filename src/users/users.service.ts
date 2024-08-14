@@ -1,16 +1,20 @@
 import {
   BadRequestException,
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { FindOneOptions, Not, Repository } from 'typeorm';
+import { FindOneOptions, MoreThan, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole } from './enum/user-role.enum';
 import { UserDto } from './dto/user.dto';
 import { Job } from './entities/job.entity';
+import { AccountLinkRequest } from './entities/account-link-request.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +23,10 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(Job)
     private jobRepository: Repository<Job>,
+    @InjectRepository(AccountLinkRequest)
+    private linkRequestRepository: Repository<AccountLinkRequest>,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -174,6 +182,64 @@ export class UsersService {
     }
 
     await this.jobRepository.remove(job);
+  }
+
+  async requestLinkAccount(
+    requesterId: number,
+    targetUserId: number,
+  ): Promise<AccountLinkRequest> {
+    const requester = await this.userRepository.findOne({
+      where: { id: requesterId },
+      relations: ['linkedAccounts'],
+    });
+    const targetUser = await this.userRepository.findOne({
+      where: { id: targetUserId },
+      relations: ['linkedAccounts'],
+    });
+
+    if (!requester || !targetUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const alreadyLinked = requester.linkedAccounts.some(
+      (account) => account.id === targetUserId,
+    );
+
+    if (alreadyLinked) {
+      throw new ConflictException('You are already linked to this account');
+    }
+
+    const existingRequest = await this.linkRequestRepository.findOne({
+      where: {
+        requester: { id: requesterId },
+        targetUser: { id: targetUserId },
+        createdAt: MoreThan(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      },
+    });
+
+    if (existingRequest) {
+      throw new ConflictException('A similar request is already pending');
+    }
+
+    const linkRequest = this.linkRequestRepository.create({
+      requester,
+      targetUser,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+
+    const savedRequest = await this.linkRequestRepository.save(linkRequest);
+
+    await this.notificationsService.createNotification(
+      targetUser.id,
+      'link_request',
+      `${requester.username} est ton compte ?`,
+      undefined,
+      undefined,
+      savedRequest.id,
+    );
+
+    return savedRequest;
   }
 
   private normalizeUsername(username: string): string {

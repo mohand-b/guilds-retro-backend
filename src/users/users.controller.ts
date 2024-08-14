@@ -19,6 +19,7 @@ import { UserRole } from './enum/user-role.enum';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserDto } from './dto/user.dto';
 import { Job } from './entities/job.entity';
+import { AccountLinkRequest } from './entities/account-link-request.entity';
 
 @Controller('users')
 export class UsersController {
@@ -61,7 +62,7 @@ export class UsersController {
     return this.usersService.updateUserRole(userId, role);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
   @Post('job')
   async addJobToUser(
@@ -77,7 +78,7 @@ export class UsersController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
   @Patch('job/:jobId/level')
   async updateJobLevel(
@@ -88,7 +89,7 @@ export class UsersController {
     return this.usersService.updateJobLevel(req.user.userId, jobId, level);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
   @Delete('job/:jobId')
   async removeJob(
@@ -96,5 +97,14 @@ export class UsersController {
     @Param('jobId') jobId: number,
   ): Promise<void> {
     return this.usersService.removeJob(req.user.userId, jobId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('link-account/:targetUserId')
+  async requestLinkAccount(
+    @Req() req: any,
+    @Param('targetUserId') targetUserId: number,
+  ): Promise<AccountLinkRequest> {
+    return this.usersService.requestLinkAccount(req.user.userId, targetUserId);
   }
 }

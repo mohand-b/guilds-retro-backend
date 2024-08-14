@@ -30,7 +30,7 @@ export class AccountLinkRequest {
 
   @OneToMany(
     () => Notification,
-    (notification) => notification.accountLikeRequest,
+    (notification) => notification.accountLinkRequest,
     {
       cascade: true,
       onDelete: 'CASCADE',

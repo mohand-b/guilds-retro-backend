@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MembershipRequestsService } from './membership-requests.service';
-
-import { UsersService } from '../users/users.service';
 import { MembershipRequest } from './entities/membership-request.entity';
 import { Guild } from '../guilds/entities/guild.entity';
 import { MembershipRequestsController } from './membership-requests.controller';
@@ -17,7 +15,7 @@ import { GuildsModule } from '../guilds/guilds.module';
     GuildsModule,
   ],
   controllers: [MembershipRequestsController],
-  providers: [MembershipRequestsService, UsersService],
+  providers: [MembershipRequestsService],
   exports: [MembershipRequestsService],
 })
 export class MembershipRequestsModule {}

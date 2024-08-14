@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -74,5 +75,26 @@ export class UsersController {
       level,
       isForgemaging,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Patch('job/:jobId/level')
+  async updateJobLevel(
+    @Req() req: any,
+    @Param('jobId') jobId: number,
+    @Body('level') level: number,
+  ): Promise<Job> {
+    return this.usersService.updateJobLevel(req.user.userId, jobId, level);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Delete('job/:jobId')
+  async removeJob(
+    @Req() req: any,
+    @Param('jobId') jobId: number,
+  ): Promise<void> {
+    return this.usersService.removeJob(req.user.userId, jobId);
   }
 }

@@ -146,6 +146,36 @@ export class UsersService {
     return this.jobRepository.save(newJob);
   }
 
+  async updateJobLevel(
+    userId: number,
+    jobId: number,
+    level: number,
+  ): Promise<Job> {
+    const job = await this.jobRepository.findOne({
+      where: { id: jobId, user: { id: userId } },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    job.level = level;
+
+    return this.jobRepository.save(job);
+  }
+
+  async removeJob(userId: number, jobId: number): Promise<void> {
+    const job = await this.jobRepository.findOne({
+      where: { id: jobId, user: { id: userId } },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    await this.jobRepository.remove(job);
+  }
+
   private normalizeUsername(username: string): string {
     if (!username) return username;
     return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();

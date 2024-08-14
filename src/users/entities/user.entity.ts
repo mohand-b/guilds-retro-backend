@@ -1,6 +1,8 @@
 import {
   Column,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -16,6 +18,7 @@ import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
 import { Job } from './job.entity';
+import { AccountLinkRequest } from './account-link-request.entity';
 
 @Entity()
 export class User {
@@ -82,4 +85,18 @@ export class User {
 
   @OneToMany(() => Job, (job) => job.user, { cascade: true, eager: true })
   jobs: Job[];
+
+  @ManyToMany(() => User, (user) => user.linkedAccounts)
+  @JoinTable({
+    name: 'user_links',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'linked_user_id', referencedColumnName: 'id' },
+  })
+  linkedAccounts: User[];
+
+  @OneToMany(() => AccountLinkRequest, (request) => request.requester)
+  sentLinkRequests: AccountLinkRequest[];
+
+  @OneToMany(() => AccountLinkRequest, (request) => request.targetUser)
+  receivedLinkRequests: AccountLinkRequest[];
 }

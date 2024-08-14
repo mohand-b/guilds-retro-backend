@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Event } from '../../events/entities/event.entity';
+import { AccountLinkRequest } from '../../users/entities/account-link-request.entity';
 
 @Entity()
 export class Notification {
@@ -40,4 +41,14 @@ export class Notification {
     onDelete: 'CASCADE',
   })
   event?: Event;
+
+  @ManyToOne(
+    () => AccountLinkRequest,
+    (accountLinkRequest) => accountLinkRequest.notifications,
+    {
+      nullable: true,
+      onDelete: 'CASCADE',
+    },
+  )
+  accountLinkRequest?: AccountLinkRequest;
 }

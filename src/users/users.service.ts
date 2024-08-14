@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -9,12 +10,15 @@ import { FindOneOptions, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole } from './enum/user-role.enum';
 import { UserDto } from './dto/user.dto';
+import { Job } from './entities/job.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Job)
+    private jobRepository: Repository<Job>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -91,11 +95,6 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  private normalizeUsername(username: string): string {
-    if (!username) return username;
-    return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
-  }
-
   async updateUserRole(userId: number, role: UserRole): Promise<UserDto> {
     const user: User = await this.userRepository.findOne({
       where: { id: userId },
@@ -105,5 +104,50 @@ export class UsersService {
     }
     user.role = role;
     return this.userRepository.save(user);
+  }
+
+  async addJobToUser(
+    userId: number,
+    jobName: string,
+    level: number,
+    isForgemaging: boolean,
+  ): Promise<Job> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['jobs'],
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const normalJobs = user.jobs.filter((job) => !job.isForgemaging);
+    const forgemagingJobs = user.jobs.filter((job) => job.isForgemaging);
+
+    if (!isForgemaging && normalJobs.length >= 3) {
+      throw new BadRequestException(
+        'User already has the maximum number of normal jobs',
+      );
+    }
+
+    if (isForgemaging && forgemagingJobs.length >= 3) {
+      throw new BadRequestException(
+        'User already has the maximum number of forgemaging jobs',
+      );
+    }
+
+    const newJob = this.jobRepository.create({
+      name: jobName,
+      level,
+      isForgemaging,
+      user,
+    });
+
+    return this.jobRepository.save(newJob);
+  }
+
+  private normalizeUsername(username: string): string {
+    if (!username) return username;
+    return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
   }
 }

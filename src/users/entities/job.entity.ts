@@ -12,6 +12,9 @@ export class Job {
   @Column()
   level: number;
 
+  @Column({ default: false })
+  isForgemaging: boolean;
+
   @ManyToOne(() => User, (user) => user.jobs)
   user: User;
 }

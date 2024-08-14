@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from './enum/user-role.enum';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserDto } from './dto/user.dto';
+import { Job } from './entities/job.entity';
 
 @Controller('users')
 export class UsersController {
@@ -56,5 +58,21 @@ export class UsersController {
     const { role } = updateUserRoleDto;
 
     return this.usersService.updateUserRole(userId, role);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Post('job')
+  async addJobToUser(
+    @Req() req: any,
+    @Body() addJobDto: { name: string; level: number; isForgemaging: boolean },
+  ): Promise<Job> {
+    const { name, level, isForgemaging } = addJobDto;
+    return this.usersService.addJobToUser(
+      req.user.userId,
+      name,
+      level,
+      isForgemaging,
+    );
   }
 }

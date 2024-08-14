@@ -107,4 +107,16 @@ export class UsersController {
   ): Promise<AccountLinkRequest> {
     return this.usersService.requestLinkAccount(req.user.userId, targetUserId);
   }
+
+  @Post('link-requests/:id/accept')
+  @UseGuards(JwtAuthGuard)
+  async acceptLinkRequest(@Param('id') requestId: number, @Req() req: any) {
+    await this.usersService.acceptLinkRequest(requestId, req.user.userI);
+  }
+
+  @Post('link-requests/:id/reject')
+  @UseGuards(JwtAuthGuard)
+  async rejectLinkRequest(@Param('id') requestId: number, @Req() req: any) {
+    await this.usersService.rejectLinkRequest(requestId, req.user.userI);
+  }
 }

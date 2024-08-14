@@ -11,6 +11,8 @@ import { AccountLinkRequest } from '../users/entities/account-link-request.entit
 
 @Injectable()
 export class NotificationsService {
+  v;
+
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
@@ -91,6 +93,21 @@ export class NotificationsService {
     const notification = await this.notificationRepository.findOne({
       where: { event: { id: eventId } },
       relations: ['user'],
+    });
+
+    if (notification) {
+      const notificationId = notification.id;
+      await this.notificationRepository.remove(notification);
+      this.notificationGateway.cancelNotification(
+        notification.user.id,
+        notificationId,
+      );
+    }
+  }
+
+  async cancelNotificationByLinkRequest(requestId: number): Promise<void> {
+    const notification = await this.notificationRepository.findOne({
+      where: { accountLinkRequest: { id: requestId } },
     });
 
     if (notification) {

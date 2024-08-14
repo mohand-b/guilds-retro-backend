@@ -5,6 +5,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -232,7 +233,7 @@ export class UsersService {
 
     await this.notificationsService.createNotification(
       targetUser.id,
-      'link_request',
+      'link_account',
       `${requester.username} est ton compte ?`,
       undefined,
       undefined,
@@ -240,6 +241,70 @@ export class UsersService {
     );
 
     return savedRequest;
+  }
+
+  async acceptLinkRequest(requestId: number, userId: number): Promise<void> {
+    const linkRequest = await this.linkRequestRepository.findOne({
+      where: { id: requestId },
+      relations: ['requester', 'targetUser'],
+    });
+
+    if (!linkRequest) {
+      throw new NotFoundException('Link request not found');
+    }
+
+    if (linkRequest.targetUser.id !== userId) {
+      throw new UnauthorizedException(
+        'You are not authorized to accept this request',
+      );
+    }
+
+    linkRequest.requester.linkedAccounts.push(linkRequest.targetUser);
+    linkRequest.targetUser.linkedAccounts.push(linkRequest.requester);
+
+    await this.userRepository.save(linkRequest.requester);
+    await this.userRepository.save(linkRequest.targetUser);
+
+    await this.linkRequestRepository.remove(linkRequest);
+    await this.notificationsService.cancelNotificationByLinkRequest(requestId);
+
+    await this.notificationsService.createNotification(
+      linkRequest.requester.id,
+      'link_account',
+      `${linkRequest.targetUser.username} est lié à ton profil.`,
+    );
+
+    await this.notificationsService.createNotification(
+      linkRequest.targetUser.id,
+      'link_account',
+      `${linkRequest.requester.username} est lié à ton profil.`,
+    );
+  }
+
+  async rejectLinkRequest(requestId: number, userId: number): Promise<void> {
+    const linkRequest = await this.linkRequestRepository.findOne({
+      where: { id: requestId },
+      relations: ['requester', 'targetUser'],
+    });
+
+    if (!linkRequest) {
+      throw new NotFoundException('Link request not found');
+    }
+
+    if (linkRequest.targetUser.id !== userId) {
+      throw new UnauthorizedException(
+        'You are not authorized to reject this request',
+      );
+    }
+
+    await this.linkRequestRepository.remove(linkRequest);
+    await this.notificationsService.cancelNotificationByLinkRequest(requestId);
+
+    await this.notificationsService.createNotification(
+      linkRequest.requester.id,
+      'link_rejected',
+      `${linkRequest.targetUser.username} a refusé ta demande de liaison de compte.`,
+    );
   }
 
   private normalizeUsername(username: string): string {

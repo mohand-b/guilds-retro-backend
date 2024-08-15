@@ -99,7 +99,8 @@ export class UsersController {
     return this.usersService.removeJob(req.user.userId, jobId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   @Post('link-account/:targetUserId')
   async requestLinkAccount(
     @Req() req: any,
@@ -108,15 +109,17 @@ export class UsersController {
     return this.usersService.requestLinkAccount(req.user.userId, targetUserId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   @Post('link-requests/:id/accept')
-  @UseGuards(JwtAuthGuard)
   async acceptLinkRequest(@Param('id') requestId: number, @Req() req: any) {
-    await this.usersService.acceptLinkRequest(requestId, req.user.userI);
+    await this.usersService.acceptLinkRequest(requestId, req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   @Post('link-requests/:id/reject')
-  @UseGuards(JwtAuthGuard)
   async rejectLinkRequest(@Param('id') requestId: number, @Req() req: any) {
-    await this.usersService.rejectLinkRequest(requestId, req.user.userI);
+    await this.usersService.rejectLinkRequest(requestId, req.user.userId);
   }
 }

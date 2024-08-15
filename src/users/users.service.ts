@@ -246,13 +246,19 @@ export class UsersService {
   async acceptLinkRequest(requestId: number, userId: number): Promise<void> {
     const linkRequest = await this.linkRequestRepository.findOne({
       where: { id: requestId },
-      relations: ['requester', 'targetUser'],
+      relations: [
+        'requester',
+        'targetUser',
+        'requester.linkedAccounts',
+        'targetUser.linkedAccounts',
+      ],
     });
 
     if (!linkRequest) {
       throw new NotFoundException('Link request not found');
     }
 
+    console.log(linkRequest.targetUser.id, userId);
     if (linkRequest.targetUser.id !== userId) {
       throw new UnauthorizedException(
         'You are not authorized to accept this request',
@@ -265,7 +271,6 @@ export class UsersService {
     await this.userRepository.save(linkRequest.requester);
     await this.userRepository.save(linkRequest.targetUser);
 
-    await this.linkRequestRepository.remove(linkRequest);
     await this.notificationsService.cancelNotificationByLinkRequest(requestId);
 
     await this.notificationsService.createNotification(
@@ -279,6 +284,8 @@ export class UsersService {
       'link_account',
       `${linkRequest.requester.username} est lié à ton profil.`,
     );
+
+    await this.linkRequestRepository.remove(linkRequest);
   }
 
   async rejectLinkRequest(requestId: number, userId: number): Promise<void> {
@@ -297,7 +304,6 @@ export class UsersService {
       );
     }
 
-    await this.linkRequestRepository.remove(linkRequest);
     await this.notificationsService.cancelNotificationByLinkRequest(requestId);
 
     await this.notificationsService.createNotification(
@@ -305,6 +311,8 @@ export class UsersService {
       'link_rejected',
       `${linkRequest.targetUser.username} a refusé ta demande de liaison de compte.`,
     );
+
+    await this.linkRequestRepository.remove(linkRequest);
   }
 
   private normalizeUsername(username: string): string {

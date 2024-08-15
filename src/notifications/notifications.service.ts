@@ -108,6 +108,7 @@ export class NotificationsService {
   async cancelNotificationByLinkRequest(requestId: number): Promise<void> {
     const notification = await this.notificationRepository.findOne({
       where: { accountLinkRequest: { id: requestId } },
+      relations: ['user'],
     });
 
     if (notification) {
@@ -124,6 +125,7 @@ export class NotificationsService {
     return this.notificationRepository.find({
       where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
+      relations: ['like', 'event', 'accountLinkRequest'],
     });
   }
 

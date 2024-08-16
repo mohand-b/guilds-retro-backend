@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Event } from '../../events/entities/event.entity';
 import { AccountLinkRequest } from '../../users/entities/account-link-request.entity';
+import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
 
 @Entity()
 export class Notification {
@@ -51,4 +52,14 @@ export class Notification {
     },
   )
   accountLinkRequest?: AccountLinkRequest;
+
+  @ManyToOne(
+    () => MembershipRequest,
+    (membershipRequest) => membershipRequest.notifications,
+    {
+      nullable: true,
+      onDelete: 'CASCADE',
+    },
+  )
+  membershipRequest?: MembershipRequest;
 }

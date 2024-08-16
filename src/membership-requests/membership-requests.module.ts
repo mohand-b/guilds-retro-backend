@@ -7,12 +7,14 @@ import { MembershipRequestsController } from './membership-requests.controller';
 import { UsersModule } from '../users/users.module';
 import { User } from '../users/entities/user.entity';
 import { GuildsModule } from '../guilds/guilds.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MembershipRequest, Guild, User]),
     UsersModule,
     GuildsModule,
+    NotificationsModule,
   ],
   controllers: [MembershipRequestsController],
   providers: [MembershipRequestsService],

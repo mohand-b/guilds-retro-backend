@@ -12,6 +12,7 @@ import { Guild } from '../guilds/entities/guild.entity';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildsService } from '../guilds/services/guilds.service';
 import { MembershipRequestDto } from './dto/membership-request.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MembershipRequestsService {
@@ -22,6 +23,7 @@ export class MembershipRequestsService {
     private guildsRepository: Repository<Guild>,
     private guildsService: GuildsService,
     private usersService: UsersService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createMembershipRequest(
@@ -69,6 +71,22 @@ export class MembershipRequestsService {
     newRequest.createdAt = new Date();
 
     await this.membershipRequestRepository.save(newRequest);
+
+    const guildLeader = guild.members.find(
+      (member) => member.role === UserRole.LEADER,
+    );
+    if (guildLeader) {
+      await this.notificationsService.createNotification(
+        guildLeader.id,
+        'membership_request',
+        `${user.username} souhaite rejoindre ${guild.name}.`,
+        undefined,
+        undefined,
+        undefined,
+        newRequest.id,
+      );
+    }
+
     return {
       ...newRequest,
       guild: this.guildsService.toGuildSummaryDto(guild),

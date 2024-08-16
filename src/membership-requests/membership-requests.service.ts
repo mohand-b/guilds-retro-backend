@@ -6,7 +6,7 @@ import {
 import { MembershipRequest } from './entities/membership-request.entity';
 import { RequestStatus } from './enum/request-status.enum';
 import { UsersService } from '../users/users.service';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Guild } from '../guilds/entities/guild.entity';
 import { UserRole } from '../users/enum/user-role.enum';
@@ -39,6 +39,19 @@ export class MembershipRequestsService {
       throw new BadRequestException('User is already a member of a guild');
     }
 
+    const existingRequest = await this.membershipRequestRepository.findOne({
+      where: {
+        user: { id: userId },
+        status: In([RequestStatus.PENDING, RequestStatus.APPROVED]),
+      },
+    });
+
+    if (existingRequest) {
+      throw new BadRequestException(
+        'You already have a pending or approved membership request.',
+      );
+    }
+
     const guild = await this.guildsRepository.findOne({
       where: { id: guildId },
       relations: [
@@ -51,17 +64,6 @@ export class MembershipRequestsService {
 
     if (!guild) {
       throw new NotFoundException('Guild not found');
-    }
-
-    if (!guild.membershipRequests) {
-      guild.membershipRequests = [];
-    }
-
-    const existingRequest = guild.membershipRequests.find(
-      (request) => request.user && request.user.id === userId,
-    );
-    if (existingRequest && existingRequest.status === RequestStatus.PENDING) {
-      throw new BadRequestException('Membership request already exists');
     }
 
     const newRequest = new MembershipRequest();

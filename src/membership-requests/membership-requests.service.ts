@@ -118,6 +118,10 @@ export class MembershipRequestsService {
     await this.membershipRequestRepository.save(request);
     await this.usersService.save(request.user);
 
+    await this.notificationsService.cancelNotificationByMembershipRequest(
+      request.id,
+    );
+
     return request;
   }
 
@@ -134,6 +138,10 @@ export class MembershipRequestsService {
     request.updatedAt = new Date();
 
     await this.membershipRequestRepository.save(request);
+
+    await this.notificationsService.cancelNotificationByMembershipRequest(
+      request.id,
+    );
 
     return request;
   }

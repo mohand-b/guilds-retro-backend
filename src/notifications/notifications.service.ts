@@ -132,11 +132,29 @@ export class NotificationsService {
     }
   }
 
+  async cancelNotificationByMembershipRequest(
+    requestId: number,
+  ): Promise<void> {
+    const notification = await this.notificationRepository.findOne({
+      where: { membershipRequest: { id: requestId } },
+      relations: ['user'],
+    });
+
+    if (notification) {
+      const notificationId = notification.id;
+      await this.notificationRepository.remove(notification);
+      this.notificationGateway.cancelNotification(
+        notification.user.id,
+        notificationId,
+      );
+    }
+  }
+
   async getNotificationsForUser(userId: number) {
     return this.notificationRepository.find({
       where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
-      relations: ['like', 'event', 'accountLinkRequest'],
+      relations: ['like', 'event', 'accountLinkRequest', 'membershipRequest'],
     });
   }
 

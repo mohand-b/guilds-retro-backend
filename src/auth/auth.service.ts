@@ -107,7 +107,7 @@ export class AuthService {
     const user = await this.usersService.findOneByUsername(
       username.toLowerCase(),
       {
-        relations: ['guild', 'guild.allies'],
+        relations: ['guild', 'guild.allies', 'linkedAccounts'],
       },
     );
     if (!user) {

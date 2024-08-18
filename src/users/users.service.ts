@@ -77,10 +77,16 @@ export class UsersService {
     username: string,
     options?: FindOneOptions<User>,
   ): Promise<User> {
-    return this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { username: this.normalizeUsername(username) },
       ...options,
     });
+
+    if (!user) {
+      throw new NotFoundException(`User with username '${username}' not found`);
+    }
+
+    return user;
   }
 
   async findMembersByGuild(guildId: number): Promise<User[]> {

@@ -44,6 +44,13 @@ export class UsersController {
     );
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Get(':username')
+  getUserByUsername(@Param('username') username: string): Promise<User> {
+    return this.usersService.findOneByUsername(username);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getCurrentUser(@Req() req: any): Promise<User> {

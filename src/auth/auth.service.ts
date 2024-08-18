@@ -13,10 +13,14 @@ import { User } from '../users/entities/user.entity';
 import { GuildCreationCodeService } from '../guilds/services/guild-creation-code.service';
 import { MembershipRequestDto } from '../membership-requests/dto/membership-request.dto';
 import { Guild } from '../guilds/entities/guild.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private usersService: UsersService,
     private guildsService: GuildsService,
     private guildCreationCodeService: GuildCreationCodeService,
@@ -28,29 +32,160 @@ export class AuthService {
     user: UserLightDto;
     token: string;
   }> {
-    const { password, guildName, logo, level, description, ...userData } =
-      createGuildLeaderDto;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await this.usersService.create({
-      ...userData,
-      username: userData.username.toLowerCase(),
-      password: hashedPassword,
+    const user = await this.createAndSaveUser({
+      ...createGuildLeaderDto,
+      role: UserRole.LEADER,
     });
 
-    await this.usersService.save({ ...user, role: UserRole.LEADER });
-    user.role = UserRole.LEADER;
-
-    const guild = await this.guildsService.create(
-      { name: guildName, logo, level, description },
-      user,
+    const guild = await this.createAndAssignGuild(user, createGuildLeaderDto);
+    await this.guildCreationCodeService.invalidateCodes(
+      createGuildLeaderDto.guildName,
     );
 
-    await this.guildCreationCodeService.invalidateCodes(guildName);
+    return this.generateUserTokenPayload(user, guild);
+  }
 
+  async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
+    user: User;
+    token: string;
+  }> {
+    const user = await this.createAndSaveUser({
+      ...joinGuildMemberDto,
+      role: UserRole.CANDIDATE,
+    });
+
+    await this.assignUserToGuild(user, joinGuildMemberDto.guildId);
+
+    const token = this.generateToken(user);
+
+    return { user, token };
+  }
+
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.findUserWithCredentials(username, pass);
+    return this.sanitizeUser(user);
+  }
+
+  async login(user: User): Promise<{
+    user: User;
+    token: string;
+    requests?: MembershipRequestDto[];
+  }> {
     const payload = { username: user.username, sub: user.id, role: user.role };
     const token = this.jwtService.sign(payload);
 
+    return {
+      user,
+      token,
+      requests: await this.membershipRequestsService.findRequestsForUser(
+        user.id,
+      ),
+    };
+  }
+
+  async refreshUser(userId: number): Promise<{
+    user: User;
+    token: string;
+    requests?: MembershipRequestDto[];
+  }> {
+    const user = await this.usersService.findOneById(userId, {
+      relations: ['guild', 'guild.allies'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const token = this.jwtService.sign({
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+    });
+
+    return {
+      user,
+      token,
+      requests: await this.membershipRequestsService.findRequestsForUser(
+        user.id,
+      ),
+    };
+  }
+
+  private async assignUserToGuild(user: User, guildId: number): Promise<Guild> {
+    const guild = await this.guildsService.findOne(guildId);
+    if (!guild) {
+      throw new Error('Guild not found');
+    }
+
+    await this.membershipRequestsService.createMembershipRequest(
+      user.id,
+      guildId,
+    );
+    return guild;
+  }
+
+  private async createAndSaveUser(dto: any): Promise<User> {
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.create({
+      ...dto,
+      username: dto.username.toLowerCase(),
+      password: hashedPassword,
+    });
+
+    await this.usersService.save(user);
+    return user;
+  }
+
+  private async createAndAssignGuild(
+    user: User,
+    dto: CreateGuildLeaderDto,
+  ): Promise<Guild> {
+    return this.guildsService.create(
+      {
+        name: dto.guildName,
+        logo: dto.logo,
+        level: dto.level,
+        description: dto.description,
+      },
+      user,
+    );
+  }
+
+  private async findUserWithCredentials(
+    username: string,
+    pass: string,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { username: this.normalizeUsername(username.toLowerCase()) },
+      relations: ['guild', 'guild.allies', 'linkedAccounts'],
+    });
+
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const isMatch = await bcrypt.compare(pass, user.password);
+    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+
+    return user;
+  }
+
+  private sanitizeUser(user: User): Omit<User, 'password'> {
+    const userInfo = { ...user };
+    delete userInfo.password;
+    return userInfo;
+  }
+
+  private generateToken(user: User): string {
+    const payload = { username: user.username, sub: user.id, role: user.role };
+    return this.jwtService.sign(payload);
+  }
+
+  private generateUserTokenPayload(
+    user: User,
+    guild: Guild,
+  ): {
+    user: UserLightDto;
+    token: string;
+  } {
     const guildDto: Omit<GuildDto, 'members'> = {
       id: guild.id,
       name: guild.name,
@@ -65,127 +200,13 @@ export class AuthService {
       guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
     };
 
+    const token = this.generateToken(user);
+
     return { user: userLightDto, token };
   }
 
-  async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
-    user: User;
-    token: string;
-  }> {
-    const { password, guildId, ...userData } = joinGuildMemberDto;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await this.usersService.create({
-      ...userData,
-      username: userData.username.toLowerCase(),
-      password: hashedPassword,
-    });
-
-    user.role = UserRole.CANDIDATE;
-
-    const guild = await this.guildsService.findOne(guildId);
-    if (!guild) {
-      throw new Error('Guild not found');
-    }
-
-    await this.membershipRequestsService.createMembershipRequest(
-      user.id,
-      guildId,
-    );
-
-    const payload = {
-      username: user.username,
-      sub: user.id,
-      role: user.role,
-    };
-    const token = this.jwtService.sign(payload);
-
-    return { user, token };
-  }
-
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByUsername(
-      username.toLowerCase(),
-      {
-        relations: ['guild', 'guild.allies', 'linkedAccounts'],
-      },
-    );
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const isMatch = await bcrypt.compare(pass, user.password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userInfo } = user;
-    return userInfo;
-  }
-
-  async login(user: any): Promise<{
-    user: UserLightDto;
-    token: string;
-    requests?: MembershipRequestDto[];
-  }> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, guild, ...userInfo } = user;
-    const payload = { username: user.username, sub: user.id, role: user.role };
-    const token = this.jwtService.sign(payload);
-
-    const userLightDto: UserLightDto = {
-      ...userInfo,
-      guild: guild,
-      guildAlliesIds:
-        guild && guild.allies ? guild.allies.map((ally: Guild) => ally.id) : [],
-    };
-
-    const requests: MembershipRequestDto[] =
-      await this.membershipRequestsService.findRequestsForUser(user.id);
-
-    return {
-      user: userLightDto,
-      token: token,
-      requests,
-    };
-  }
-
-  async refreshUser(userId: number): Promise<{
-    user: UserLightDto;
-    token: string;
-    requests?: MembershipRequestDto[];
-  }> {
-    const user = await this.usersService.findOneById(userId, {
-      relations: ['guild', 'guild.allies'],
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const payload = { username: user.username, sub: user.id, role: user.role };
-    const token = this.jwtService.sign(payload);
-
-    const allies = user.guild.allies.map((ally) =>
-      this.guildsService.toGuildSummaryDto(ally),
-    );
-
-    const userLightDto: UserLightDto = {
-      ...user,
-      guild: { ...user.guild, allies },
-      guildAlliesIds: user.guild?.allies
-        ? user.guild.allies.map((ally) => ally.id)
-        : [],
-    };
-
-    const requests: MembershipRequestDto[] =
-      await this.membershipRequestsService.findRequestsForUser(user.id);
-
-    return {
-      user: userLightDto,
-      token: token,
-      requests,
-    };
+  private normalizeUsername(username: string): string {
+    if (!username) return username;
+    return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
   }
 }

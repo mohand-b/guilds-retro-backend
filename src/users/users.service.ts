@@ -12,7 +12,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { FindOneOptions, MoreThan, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole } from './enum/user-role.enum';
-import { UserDto } from './dto/user.dto';
 import { Job } from './entities/job.entity';
 import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -32,7 +31,9 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const username = this.normalizeUsername(createUserDto.username);
-    const existingUser = await this.findOneByUsername(username);
+    const existingUser = await this.userRepository.findOne({
+      where: { username: this.normalizeUsername(username) },
+    });
     if (existingUser) {
       throw new ConflictException('Username already taken');
     }
@@ -67,19 +68,22 @@ export class UsersService {
   }
 
   async findOneById(id: number, options?: FindOneOptions<User>): Promise<User> {
-    return this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id },
       ...options,
     });
+
+    if (!user) {
+      throw new NotFoundException(`User with id '${id}' not found`);
+    }
+
+    return user;
   }
 
-  async findOneByUsername(
-    username: string,
-    options?: FindOneOptions<User>,
-  ): Promise<User> {
+  async findOneByUsername(username: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { username: this.normalizeUsername(username) },
-      ...options,
+      relations: ['guild', 'guild.allies', 'linkedAccounts'],
     });
 
     if (!user) {
@@ -110,7 +114,7 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async updateUserRole(userId: number, role: UserRole): Promise<UserDto> {
+  async updateUserRole(userId: number, role: UserRole): Promise<User> {
     const user: User = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -264,7 +268,6 @@ export class UsersService {
       throw new NotFoundException('Link request not found');
     }
 
-    console.log(linkRequest.targetUser.id, userId);
     if (linkRequest.targetUser.id !== userId) {
       throw new UnauthorizedException(
         'You are not authorized to accept this request',

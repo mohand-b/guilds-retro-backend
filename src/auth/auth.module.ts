@@ -8,9 +8,12 @@ import { JwtStrategy } from './jwt.strategy';
 import { GuildsModule } from '../guilds/guilds.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MembershipRequestsModule } from '../membership-requests/membership-requests.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([User]),
     UsersModule,
     GuildsModule,
     MembershipRequestsModule,

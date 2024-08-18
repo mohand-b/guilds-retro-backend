@@ -9,6 +9,7 @@ import { Like } from '../likes/entities/like.entity';
 import { Event } from '../events/entities/event.entity';
 import { AccountLinkRequest } from '../users/entities/account-link-request.entity';
 import { MembershipRequest } from '../membership-requests/entities/membership-request.entity';
+import { Alliance } from '../alliances/entities/alliance.entity';
 
 @Injectable()
 export class NotificationsService {
@@ -25,6 +26,8 @@ export class NotificationsService {
     private readonly accountLinkRequestRepository: Repository<AccountLinkRequest>,
     @InjectRepository(MembershipRequest)
     private readonly membershipRequestRepository: Repository<MembershipRequest>,
+    @InjectRepository(Alliance)
+    private readonly allianceRepository: Repository<Alliance>,
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     private readonly notificationGateway: NotificationGateway,
@@ -38,6 +41,7 @@ export class NotificationsService {
     eventId?: number,
     accountLinkRequestId?: number,
     membershipRequestId?: number,
+    allianceId?: number,
   ): Promise<Notification> {
     const user: User = await this.usersService.findOneById(userId);
     if (!user) {
@@ -64,6 +68,12 @@ export class NotificationsService {
         })
       : null;
 
+    const alliance = allianceId
+      ? await this.allianceRepository.findOne({
+          where: { id: allianceId },
+        })
+      : null;
+
     const notification: Notification = this.notificationRepository.create({
       user,
       type,
@@ -74,6 +84,7 @@ export class NotificationsService {
       event,
       accountLinkRequest,
       membershipRequest,
+      alliance,
     });
 
     const savedNotification: Notification =

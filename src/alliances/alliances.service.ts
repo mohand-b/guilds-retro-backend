@@ -13,6 +13,8 @@ import {
   GuildAllianceRequestsDto,
 } from './dto/alliance.dto';
 import { AllianceStatusEnum } from './enum/alliance-status.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UserRole } from '../users/enum/user-role.enum';
 
 @Injectable()
 export class AlliancesService {
@@ -20,6 +22,7 @@ export class AlliancesService {
     private guildsService: GuildsService,
     @InjectRepository(Alliance)
     private allianceRepository: Repository<Alliance>,
+    private notificationService: NotificationsService,
   ) {}
 
   async createAllianceRequest(
@@ -61,8 +64,6 @@ export class AlliancesService {
       ],
     });
 
-    console.log(existingRequest);
-
     if (existingRequest && existingRequest.status === 'PENDING') {
       throw new BadRequestException(
         'There is already a pending alliance request between these guilds',
@@ -74,6 +75,20 @@ export class AlliancesService {
       targetGuild,
       status: 'PENDING',
     });
+
+    const targetGuildLeader = targetGuild.members.find(
+      (member) => member.role === UserRole.LEADER,
+    );
+
+    this.notificationService.createNotification(
+      targetGuildLeader.id,
+      'alliance_request',
+      `La guilde ${requesterGuild.name} souhaite s'allier avec ${targetGuild.name}`,
+      undefined,
+      undefined,
+      undefined,
+      newRequest.id,
+    );
 
     return this.allianceRepository.save(newRequest);
   }

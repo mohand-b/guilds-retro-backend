@@ -10,6 +10,7 @@ import {
 import { Event } from '../../events/entities/event.entity';
 import { AccountLinkRequest } from '../../users/entities/account-link-request.entity';
 import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
+import { Alliance } from '../../alliances/entities/alliance.entity';
 
 @Entity()
 export class Notification {
@@ -62,4 +63,10 @@ export class Notification {
     },
   )
   membershipRequest?: MembershipRequest;
+
+  @ManyToOne(() => Alliance, (alliance) => alliance.notifications, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  alliance?: Alliance;
 }

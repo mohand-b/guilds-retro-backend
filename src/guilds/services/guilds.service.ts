@@ -22,7 +22,7 @@ export class GuildsService {
   async findOne(id: number): Promise<Guild> {
     return this.guildRepository.findOne({
       where: { id },
-      relations: ['allies'],
+      relations: ['allies', 'members'],
     });
   }
 

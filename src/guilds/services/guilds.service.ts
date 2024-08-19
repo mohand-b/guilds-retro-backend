@@ -43,13 +43,7 @@ export class GuildsService {
 
     const targetGuild = await this.guildRepository.findOne({
       where: { id: guildId },
-      relations: [
-        'members',
-        'members.guild',
-        'members.guild.allies',
-        'allies',
-        'allies.members',
-      ],
+      relations: ['members', 'allies', 'allies.members', 'members.jobs'],
     });
 
     if (!targetGuild) {
@@ -111,13 +105,7 @@ export class GuildsService {
 
     const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
-      relations: [
-        'members',
-        'members.guild',
-        'members.guild.allies',
-        'allies',
-        'allies.members',
-      ],
+      relations: ['members', 'members.jobs', 'allies', 'allies.members'],
     });
 
     if (!guild) {
@@ -281,13 +269,8 @@ export class GuildsService {
       characterClass: user.characterClass,
       gender: user.gender,
       characterLevel: user.characterLevel,
-      guild: {
-        id: user.guild.id,
-        name: user.guild.name,
-        description: user.guild.description,
-        level: user.guild.level,
-      },
       role: user.role,
+      jobs: user.jobs,
     };
   }
 }

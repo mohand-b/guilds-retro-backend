@@ -3,6 +3,7 @@ import { UserRole } from '../enum/user-role.enum';
 import { CharacterClass } from '../enum/character-class.enum';
 import { GuildDto } from '../../guilds/dto/guild.dto';
 import { Gender } from '../enum/gender.enum';
+import { Job } from '../entities/job.entity';
 
 export class UserDto {
   id: number;
@@ -18,7 +19,7 @@ export class MemberDto {
   characterClass: CharacterClass;
   gender: Gender;
   characterLevel: number;
-  guild: Omit<GuildDto, 'members' | 'logo' | 'allies'>;
+  jobs: Job[];
   role: UserRole;
 }
 

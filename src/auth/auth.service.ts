@@ -38,15 +38,21 @@ export class AuthService {
     });
 
     const guild = await this.createAndAssignGuild(user, createGuildLeaderDto);
+
     await this.guildCreationCodeService.invalidateCodes(
       createGuildLeaderDto.guildName,
     );
 
-    return this.generateUserTokenPayload(user, guild);
+    user.guild = guild;
+
+    const userLightDto = this.convertToUserLightDto(user);
+    const token = this.generateToken(user);
+
+    return { user: userLightDto, token };
   }
 
   async registerAsMember(joinGuildMemberDto: JoinGuildMemberDto): Promise<{
-    user: User;
+    user: UserLightDto;
     token: string;
   }> {
     const user = await this.createAndSaveUser({
@@ -56,9 +62,10 @@ export class AuthService {
 
     await this.assignUserToGuild(user, joinGuildMemberDto.guildId);
 
+    const userLightDto = this.convertToUserLightDto(user);
     const token = this.generateToken(user);
 
-    return { user, token };
+    return { user: userLightDto, token };
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -67,15 +74,15 @@ export class AuthService {
   }
 
   async login(user: User): Promise<{
-    user: User;
+    user: UserLightDto;
     token: string;
     requests?: MembershipRequestDto[];
   }> {
-    const payload = { username: user.username, sub: user.id, role: user.role };
-    const token = this.jwtService.sign(payload);
+    const userLightDto = this.convertToUserLightDto(user);
+    const token = this.generateToken(user);
 
     return {
-      user,
+      user: userLightDto,
       token,
       requests: await this.membershipRequestsService.findRequestsForUser(
         user.id,
@@ -84,7 +91,7 @@ export class AuthService {
   }
 
   async refreshUser(userId: number): Promise<{
-    user: User;
+    user: UserLightDto;
     token: string;
     requests?: MembershipRequestDto[];
   }> {
@@ -96,14 +103,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const token = this.jwtService.sign({
-      username: user.username,
-      sub: user.id,
-      role: user.role,
-    });
+    const userLightDto = this.convertToUserLightDto(user);
+    const token = this.generateToken(user);
 
     return {
-      user,
+      user: userLightDto,
       token,
       requests: await this.membershipRequestsService.findRequestsForUser(
         user.id,
@@ -179,30 +183,27 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  private generateUserTokenPayload(
-    user: User,
-    guild: Guild,
-  ): {
-    user: UserLightDto;
-    token: string;
-  } {
-    const guildDto: Omit<GuildDto, 'members'> = {
-      id: guild.id,
-      name: guild.name,
-      description: guild.description,
-      logo: guild.logo,
-      level: guild.level,
-    };
+  private convertToUserLightDto(user: User): UserLightDto {
+    const guildDto: Omit<GuildDto, 'members'> = user.guild
+      ? {
+          id: user.guild.id,
+          name: user.guild.name,
+          description: user.guild.description,
+          logo: user.guild.logo,
+          level: user.guild.level,
+        }
+      : null;
 
-    const userLightDto: UserLightDto = {
-      ...user,
+    return {
+      id: user.id,
+      username: user.username,
+      characterClass: user.characterClass,
+      gender: user.gender,
+      characterLevel: user.characterLevel,
       guild: guildDto,
-      guildAlliesIds: guild.allies ? guild.allies.map((ally) => ally.id) : [],
+      guildAlliesIds: user.guild?.allies?.map((ally) => ally.id) || [],
+      role: user.role,
     };
-
-    const token = this.generateToken(user);
-
-    return { user: userLightDto, token };
   }
 
   private normalizeUsername(username: string): string {

@@ -26,6 +26,7 @@ export class UserLightDto {
   id: number;
   username: string;
   characterClass: CharacterClass;
+  gender: Gender;
   characterLevel: number;
   guild: Omit<GuildDto, 'members'>;
   guildAlliesIds: number[];

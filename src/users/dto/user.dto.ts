@@ -19,7 +19,6 @@ export class MemberDto {
   characterClass: CharacterClass;
   gender: Gender;
   characterLevel: number;
-  jobs: Job[];
   role: UserRole;
 }
 

@@ -80,8 +80,8 @@ export class User {
   @Column({ default: false })
   feedClosingToGuildAndAllies: boolean;
 
-  @Column({ default: true })
-  showInRegistry: boolean;
+  @Column({ default: false })
+  hideProfile: boolean;
 
   @OneToMany(() => Job, (job) => job.user, { cascade: true, eager: true })
   jobs: Job[];

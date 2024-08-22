@@ -47,15 +47,12 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @Patch(':id/show-in-registry')
-  async updateShowInRegistry(
+  @Patch('show-in-registry')
+  async updateHideProfile(
     @Req() req: any,
-    @Body('showInRegistry') showInRegistry: boolean,
+    @Body('hideProfile') hideProfile: boolean,
   ) {
-    return this.usersService.updateShowInRegistry(
-      req.user.userId,
-      showInRegistry,
-    );
+    return this.usersService.updateHideProfile(req.user.userId, hideProfile);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -79,7 +76,6 @@ export class UsersController {
     @Body() updateUserRoleDto: UpdateUserRoleDto,
   ): Promise<UserDto> {
     const { role } = updateUserRoleDto;
-
     return this.usersService.updateUserRole(userId, role);
   }
 

@@ -96,7 +96,7 @@ export class AuthService {
     requests?: MembershipRequestDto[];
   }> {
     const user = await this.usersService.findOneById(userId, {
-      relations: ['guild', 'guild.allies'],
+      relations: ['guild', 'guild.allies', 'jobs', 'linkedAccounts'],
     });
 
     if (!user) {
@@ -161,7 +161,7 @@ export class AuthService {
   ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { username: this.normalizeUsername(username.toLowerCase()) },
-      relations: ['guild', 'guild.allies', 'linkedAccounts'],
+      relations: ['guild', 'guild.allies', 'jobs', 'linkedAccounts'],
     });
 
     if (!user) throw new UnauthorizedException('User not found');
@@ -198,6 +198,7 @@ export class AuthService {
       id: user.id,
       username: user.username,
       characterClass: user.characterClass,
+      jobs: user.jobs,
       gender: user.gender,
       characterLevel: user.characterLevel,
       guild: guildDto,

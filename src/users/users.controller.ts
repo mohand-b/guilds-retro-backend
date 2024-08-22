@@ -31,7 +31,8 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
   @Patch('feed-preference')
   async updateFeedPreference(
     @Req() req: any,
@@ -41,6 +42,19 @@ export class UsersController {
     return this.usersService.updateFeedPreference(
       req.user.userId,
       feedClosingToGuildAndAllies,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Patch(':id/show-in-registry')
+  async updateShowInRegistry(
+    @Req() req: any,
+    @Body('showInRegistry') showInRegistry: boolean,
+  ) {
+    return this.usersService.updateShowInRegistry(
+      req.user.userId,
+      showInRegistry,
     );
   }
 
@@ -71,7 +85,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @Post('job')
+  @Post('jobs')
   async addJobToUser(
     @Req() req: any,
     @Body() addJobDto: { name: string; level: number; isForgemaging: boolean },
@@ -87,7 +101,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @Patch('job/:jobId/level')
+  @Patch('jobs/:jobId/level')
   async updateJobLevel(
     @Req() req: any,
     @Param('jobId') jobId: number,
@@ -98,7 +112,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @Delete('job/:jobId')
+  @Delete('jobs/:jobId')
   async removeJob(
     @Req() req: any,
     @Param('jobId') jobId: number,

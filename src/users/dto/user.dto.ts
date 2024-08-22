@@ -31,5 +31,6 @@ export class UserLightDto {
   characterLevel: number;
   guild: Omit<GuildDto, 'members'>;
   guildAlliesIds: number[];
+  jobs: Job[];
   role: UserRole;
 }

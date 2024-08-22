@@ -114,6 +114,19 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  async updateShowInRegistry(
+    userId: number,
+    showInRegistry: boolean,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.showInRegistry = showInRegistry;
+    return await this.userRepository.save(user);
+  }
+
   async updateUserRole(userId: number, role: UserRole): Promise<User> {
     const user: User = await this.userRepository.findOne({
       where: { id: userId },

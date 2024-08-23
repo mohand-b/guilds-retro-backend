@@ -57,6 +57,13 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
+  @Get('linked-accounts')
+  async getLinkedAccounts(@Req() req: any): Promise<User[]> {
+    return this.usersService.getLinkedAccounts(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   @Get(':username')
   getUserByUsername(@Param('username') username: string): Promise<User> {
     return this.usersService.findOneByUsername(username);
@@ -114,6 +121,17 @@ export class UsersController {
     @Param('jobId') jobId: number,
   ): Promise<void> {
     return this.usersService.removeJob(req.user.userId, jobId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Get('find-for-link/:username')
+  async findUserForAccountLinking(
+    @Param('username') username: string,
+    @Req() req: any,
+  ): Promise<User> {
+    const requesterId = req.user.userId;
+    return this.usersService.findUserForAccountLinking(requesterId, username);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

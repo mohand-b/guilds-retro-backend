@@ -205,6 +205,57 @@ export class UsersService {
     await this.jobRepository.remove(job);
   }
 
+  async findUserForAccountLinking(
+    requesterId: number,
+    username: string,
+  ): Promise<User> {
+    const normalizedUsername = this.normalizeUsername(username);
+
+    const targetUser = await this.userRepository.findOne({
+      where: { username: normalizedUsername },
+      relations: ['linkedAccounts'],
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException(`Aucun compte trouvé avec '${username}'.`);
+    }
+
+    const requester = await this.userRepository.findOne({
+      where: { id: requesterId },
+      relations: ['linkedAccounts'],
+    });
+
+    if (!requester) {
+      throw new NotFoundException(
+        `Problème avec ton identifiant, reconnecte-toi.`,
+      );
+    }
+
+    const alreadyLinked = requester.linkedAccounts.some(
+      (account) => account.id === targetUser.id,
+    );
+
+    if (alreadyLinked) {
+      throw new ConflictException('Tu es déjà lié à ce compte.');
+    }
+
+    const existingRequest = await this.linkRequestRepository.findOne({
+      where: {
+        requester: { id: requesterId },
+        targetUser: { id: targetUser.id },
+        createdAt: MoreThan(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      },
+    });
+
+    if (existingRequest) {
+      throw new ConflictException(
+        'Tu as déjà une demande en attente pour ce compte.',
+      );
+    }
+
+    return targetUser;
+  }
+
   async requestLinkAccount(
     requesterId: number,
     targetUserId: number,
@@ -332,6 +383,20 @@ export class UsersService {
     );
 
     await this.linkRequestRepository.remove(linkRequest);
+  }
+
+  async getLinkedAccounts(userId: number): Promise<User[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['linkedAccounts'],
+    });
+
+    console.log(user);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user.linkedAccounts;
   }
 
   private normalizeUsername(username: string): string {

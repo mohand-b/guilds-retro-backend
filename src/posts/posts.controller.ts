@@ -51,4 +51,11 @@ export class PostsController {
   getPost(@Param('id') id: number): Promise<PostEntity> {
     return this.postsService.findOneById(id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('user/:userId/last-posts')
+  async getLastFivePosts(@Param('userId') userId: number, @Req() req: any) {
+    const requestingUserId = req.user.userId;
+    return this.postsService.findLastFivePostsByUser(userId, requestingUserId);
+  }
 }

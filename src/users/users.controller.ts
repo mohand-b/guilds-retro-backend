@@ -20,6 +20,7 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserDto } from './dto/user.dto';
 import { Job } from './entities/job.entity';
 import { AccountLinkRequest } from './entities/account-link-request.entity';
+import { OneWordQuestionnaire } from './entities/one-word-questionnaire.entity';
 
 @Controller('users')
 export class UsersController {
@@ -156,5 +157,15 @@ export class UsersController {
   @Post('link-requests/:id/reject')
   async rejectLinkRequest(@Param('id') requestId: number, @Req() req: any) {
     await this.usersService.rejectLinkRequest(requestId, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  @Patch('questionnaire')
+  async updateQuestionnaire(
+    @Req() req: any,
+    @Body() updateData: Partial<OneWordQuestionnaire>,
+  ) {
+    return this.usersService.updateQuestionnaire(req.user.userId, updateData);
   }
 }

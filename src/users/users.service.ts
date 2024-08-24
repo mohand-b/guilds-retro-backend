@@ -16,6 +16,7 @@ import { Job } from './entities/job.entity';
 import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AccountLinkGroup } from './entities/account-link-group.entity';
+import { OneWordQuestionnaire } from './entities/one-word-questionnaire.entity';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +31,8 @@ export class UsersService {
     private notificationsService: NotificationsService,
     @InjectRepository(AccountLinkGroup)
     private linkGroupRepository: Repository<AccountLinkGroup>,
+    @InjectRepository(OneWordQuestionnaire)
+    private questionnaireRepository: Repository<OneWordQuestionnaire>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -51,7 +54,7 @@ export class UsersService {
   async getCurrentUser(userId: number): Promise<User> {
     return this.userRepository.findOne({
       where: { id: userId },
-      relations: ['guild', 'guild.allies', 'posts'],
+      relations: ['guild', 'guild.allies', 'posts', 'questionnaire'],
     });
   }
 
@@ -86,7 +89,7 @@ export class UsersService {
   async findOneByUsername(username: string): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { username: this.normalizeUsername(username) },
-      relations: ['guild', 'guild.allies', 'linkGroup'],
+      relations: ['guild', 'guild.allies', 'linkGroup', 'questionnaire'],
     });
 
     if (!user) {
@@ -421,6 +424,65 @@ export class UsersService {
     );
 
     await this.linkRequestRepository.remove(linkRequest);
+  }
+
+  async updateQuestionnaire(
+    userId: number,
+    updateData: Partial<OneWordQuestionnaire>,
+  ): Promise<OneWordQuestionnaire> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['questionnaire', 'linkGroup'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let questionnaire = user.questionnaire;
+    if (!questionnaire) {
+      questionnaire = this.questionnaireRepository.create({
+        ...updateData,
+        user,
+      });
+    } else {
+      Object.assign(questionnaire, updateData);
+    }
+
+    await this.questionnaireRepository.save(questionnaire);
+
+    if (user.linkGroup) {
+      const linkGroup = await user.linkGroup;
+
+      if (linkGroup) {
+        const linkedUsers = await this.userRepository.find({
+          where: { linkGroup: { id: linkGroup.id } },
+        });
+
+        if (linkedUsers && Array.isArray(linkedUsers)) {
+          for (const linkedUser of linkedUsers) {
+            if (linkedUser.id !== userId) {
+              let linkedUserQuestionnaire =
+                await this.questionnaireRepository.findOne({
+                  where: { user: linkedUser },
+                });
+
+              if (!linkedUserQuestionnaire) {
+                linkedUserQuestionnaire = this.questionnaireRepository.create({
+                  ...updateData,
+                  user: linkedUser,
+                });
+              } else {
+                Object.assign(linkedUserQuestionnaire, updateData);
+              }
+              await this.questionnaireRepository.save(linkedUserQuestionnaire);
+            }
+          }
+        }
+      }
+    }
+
+    return questionnaire;
   }
 
   private normalizeUsername(username: string): string {

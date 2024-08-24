@@ -1,8 +1,10 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Guild } from '../../guilds/entities/guild.entity';
@@ -18,6 +20,7 @@ import { Notification } from '../../notifications/entities/notification.entity';
 import { Job } from './job.entity';
 import { AccountLinkRequest } from './account-link-request.entity';
 import { AccountLinkGroup } from './account-link-group.entity';
+import { OneWordQuestionnaire } from './one-word-questionnaire.entity';
 
 @Entity()
 export class User {
@@ -93,4 +96,10 @@ export class User {
 
   @ManyToOne(() => AccountLinkGroup, (group) => group.users, { lazy: true })
   linkGroup: Promise<AccountLinkGroup>;
+
+  @OneToOne(() => OneWordQuestionnaire, (questionnaire) => questionnaire.user, {
+    cascade: true,
+  })
+  @JoinColumn()
+  questionnaire: OneWordQuestionnaire;
 }

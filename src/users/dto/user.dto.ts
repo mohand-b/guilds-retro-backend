@@ -4,6 +4,7 @@ import { CharacterClass } from '../enum/character-class.enum';
 import { GuildDto } from '../../guilds/dto/guild.dto';
 import { Gender } from '../enum/gender.enum';
 import { Job } from '../entities/job.entity';
+import { OneWordQuestionnaire } from '../entities/one-word-questionnaire.entity';
 
 export class UserDto {
   id: number;
@@ -32,4 +33,5 @@ export class UserLightDto {
   guildAlliesIds: number[];
   jobs: Job[];
   role: UserRole;
+  questionnaire: OneWordQuestionnaire;
 }

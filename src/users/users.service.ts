@@ -15,6 +15,7 @@ import { UserRole } from './enum/user-role.enum';
 import { Job } from './entities/job.entity';
 import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AccountLinkGroup } from './entities/account-link-group.entity';
 
 @Injectable()
 export class UsersService {
@@ -27,6 +28,8 @@ export class UsersService {
     private linkRequestRepository: Repository<AccountLinkRequest>,
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
+    @InjectRepository(AccountLinkGroup)
+    private linkGroupRepository: Repository<AccountLinkGroup>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -80,17 +83,22 @@ export class UsersService {
     return user;
   }
 
-  async findOneByUsername(username: string): Promise<User> {
+  async findOneByUsername(username: string): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { username: this.normalizeUsername(username) },
-      relations: ['guild', 'guild.allies', 'linkedAccounts'],
+      relations: ['guild', 'guild.allies', 'linkGroup'],
     });
 
     if (!user) {
       throw new NotFoundException(`User with username '${username}' not found`);
     }
 
-    return user;
+    const linkedAccounts = await this.getLinkedAccounts(user.id);
+
+    return {
+      ...user,
+      linkedAccounts,
+    };
   }
 
   async findMembersByGuild(guildId: number): Promise<User[]> {
@@ -213,7 +221,6 @@ export class UsersService {
 
     const targetUser = await this.userRepository.findOne({
       where: { username: normalizedUsername },
-      relations: ['linkedAccounts'],
     });
 
     if (!targetUser) {
@@ -222,21 +229,12 @@ export class UsersService {
 
     const requester = await this.userRepository.findOne({
       where: { id: requesterId },
-      relations: ['linkedAccounts'],
     });
 
     if (!requester) {
       throw new NotFoundException(
         `Problème avec ton identifiant, reconnecte-toi.`,
       );
-    }
-
-    const alreadyLinked = requester.linkedAccounts.some(
-      (account) => account.id === targetUser.id,
-    );
-
-    if (alreadyLinked) {
-      throw new ConflictException('Tu es déjà lié à ce compte.');
     }
 
     const existingRequest = await this.linkRequestRepository.findOne({
@@ -262,23 +260,13 @@ export class UsersService {
   ): Promise<AccountLinkRequest> {
     const requester = await this.userRepository.findOne({
       where: { id: requesterId },
-      relations: ['linkedAccounts'],
     });
     const targetUser = await this.userRepository.findOne({
       where: { id: targetUserId },
-      relations: ['linkedAccounts'],
     });
 
     if (!requester || !targetUser) {
       throw new NotFoundException('User not found');
-    }
-
-    const alreadyLinked = requester.linkedAccounts.some(
-      (account) => account.id === targetUserId,
-    );
-
-    if (alreadyLinked) {
-      throw new ConflictException('You are already linked to this account');
     }
 
     const existingRequest = await this.linkRequestRepository.findOne({
@@ -317,12 +305,7 @@ export class UsersService {
   async acceptLinkRequest(requestId: number, userId: number): Promise<void> {
     const linkRequest = await this.linkRequestRepository.findOne({
       where: { id: requestId },
-      relations: [
-        'requester',
-        'targetUser',
-        'requester.linkedAccounts',
-        'targetUser.linkedAccounts',
-      ],
+      relations: ['requester', 'targetUser'],
     });
 
     if (!linkRequest) {
@@ -335,27 +318,82 @@ export class UsersService {
       );
     }
 
-    linkRequest.requester.linkedAccounts.push(linkRequest.targetUser);
-    linkRequest.targetUser.linkedAccounts.push(linkRequest.requester);
+    const requester = await this.userRepository.findOne({
+      where: { id: linkRequest.requester.id },
+      relations: ['linkGroup'],
+    });
 
-    await this.userRepository.save(linkRequest.requester);
-    await this.userRepository.save(linkRequest.targetUser);
+    const targetUser = await this.userRepository.findOne({
+      where: { id: linkRequest.targetUser.id },
+      relations: ['linkGroup'],
+    });
+
+    const requesterGroup = await requester.linkGroup;
+    const targetUserGroup = await targetUser.linkGroup;
+
+    if (!requesterGroup && !targetUserGroup) {
+      const newGroup = this.linkGroupRepository.create({
+        users: [requester, targetUser],
+      });
+      await this.linkGroupRepository.save(newGroup);
+
+      requester.linkGroup = Promise.resolve(newGroup);
+      targetUser.linkGroup = Promise.resolve(newGroup);
+      await this.userRepository.save([requester, targetUser]);
+    } else if (requesterGroup && !targetUserGroup) {
+      targetUser.linkGroup = Promise.resolve(requesterGroup);
+      await this.userRepository.save(targetUser);
+    } else if (!requesterGroup && targetUserGroup) {
+      requester.linkGroup = Promise.resolve(targetUserGroup);
+      await this.userRepository.save(requester);
+    } else if (
+      requesterGroup &&
+      targetUserGroup &&
+      requesterGroup.id !== targetUserGroup.id
+    ) {
+      const usersToMerge = targetUserGroup.users.map((user) => {
+        user.linkGroup = Promise.resolve(requesterGroup);
+        return user;
+      });
+
+      requesterGroup.users = [
+        ...new Set([...requesterGroup.users, ...usersToMerge]),
+      ];
+
+      await this.linkGroupRepository.save(requesterGroup);
+      await this.userRepository.save(usersToMerge);
+
+      await this.linkGroupRepository.remove(targetUserGroup);
+    }
 
     await this.notificationsService.cancelNotificationByLinkRequest(requestId);
 
-    await this.notificationsService.createNotification(
-      linkRequest.requester.id,
-      'link_account',
-      `${linkRequest.targetUser.username} est lié à ton profil.`,
-    );
-
-    await this.notificationsService.createNotification(
-      linkRequest.targetUser.id,
-      'link_account',
-      `${linkRequest.requester.username} est lié à ton profil.`,
-    );
-
     await this.linkRequestRepository.remove(linkRequest);
+  }
+
+  async getLinkedAccounts(userId: number): Promise<User[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['linkGroup', 'linkGroup.users'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const linkGroup = await user.linkGroup;
+
+    if (!linkGroup) {
+      return [];
+    }
+
+    const usersInGroup = linkGroup.users;
+
+    if (!usersInGroup) {
+      return [];
+    }
+
+    return usersInGroup.filter((u) => u.id !== userId);
   }
 
   async rejectLinkRequest(requestId: number, userId: number): Promise<void> {
@@ -383,20 +421,6 @@ export class UsersService {
     );
 
     await this.linkRequestRepository.remove(linkRequest);
-  }
-
-  async getLinkedAccounts(userId: number): Promise<User[]> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['linkedAccounts'],
-    });
-
-    console.log(user);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user.linkedAccounts;
   }
 
   private normalizeUsername(username: string): string {

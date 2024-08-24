@@ -133,6 +133,8 @@ export class NotificationsService {
       relations: ['user'],
     });
 
+    console.log('notification', notification);
+
     if (notification) {
       const notificationId = notification.id;
       await this.notificationRepository.remove(notification);

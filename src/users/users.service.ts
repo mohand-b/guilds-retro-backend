@@ -17,6 +17,7 @@ import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AccountLinkGroup } from './entities/account-link-group.entity';
 import { OneWordQuestionnaire } from './entities/one-word-questionnaire.entity';
+import { UserSearchDto } from './dto/user-search.dto';
 
 @Injectable()
 export class UsersService {
@@ -41,7 +42,7 @@ export class UsersService {
       where: { username: this.normalizeUsername(username) },
     });
     if (existingUser) {
-      throw new ConflictException('Username already taken');
+      throw new UnauthorizedException('Username already taken');
     }
 
     const user = this.userRepository.create({
@@ -94,6 +95,16 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException(`User with username '${username}' not found`);
+    }
+
+    if (user.hideProfile) {
+      return {
+        username: user.username,
+        hideProfile: user.hideProfile,
+        characterClass: user.characterClass,
+        gender: user.gender,
+        level: user.characterLevel,
+      };
     }
 
     const linkedAccounts = await this.getLinkedAccounts(user.id);
@@ -483,6 +494,74 @@ export class UsersService {
     }
 
     return questionnaire;
+  }
+
+  async searchUsers(
+    userSearchDto: UserSearchDto,
+  ): Promise<[Partial<User>[], number]> {
+    const {
+      username,
+      characterClass,
+      characterLevel,
+      jobName,
+      jobLevel,
+      page = 1,
+      limit = 10,
+    } = userSearchDto;
+
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.username',
+        'user.characterClass',
+        'user.gender',
+        'user.characterLevel',
+      ])
+      .leftJoin('user.jobs', 'job');
+
+    if (username) {
+      query.andWhere('user.username ILIKE :username', {
+        username: `%${username}%`,
+      });
+    }
+
+    if (characterClass) {
+      query.andWhere('user.characterClass = :characterClass', {
+        characterClass,
+      });
+    }
+
+    if (characterLevel) {
+      query.andWhere('user.characterLevel >= :characterLevel', {
+        characterLevel,
+      });
+    }
+
+    if (jobName) {
+      query.innerJoin('user.jobs', 'jobSearch', 'jobSearch.name = :jobName', {
+        jobName: jobName,
+      });
+      if (jobLevel) {
+        query.andWhere('jobSearch.level >= :jobLevel', { jobLevel: jobLevel });
+      }
+      query.andWhere('user.hideProfile = false');
+    }
+
+    query.skip((page - 1) * limit).take(limit);
+
+    const [users, count] = await query.getManyAndCount();
+
+    return [
+      users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        characterClass: user.characterClass,
+        gender: user.gender,
+        characterLevel: user.characterLevel,
+      })),
+      count,
+    ];
   }
 
   private normalizeUsername(username: string): string {

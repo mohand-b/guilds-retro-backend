@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import { UserDto } from './dto/user.dto';
 import { Job } from './entities/job.entity';
 import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { OneWordQuestionnaire } from './entities/one-word-questionnaire.entity';
+import { UserSearchDto } from './dto/user-search.dto';
 
 @Controller('users')
 export class UsersController {
@@ -48,7 +50,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @Patch('show-in-registry')
+  @Patch('hide-profile')
   async updateHideProfile(
     @Req() req: any,
     @Body('hideProfile') hideProfile: boolean,
@@ -61,6 +63,19 @@ export class UsersController {
   @Get('linked-accounts')
   async getLinkedAccounts(@Req() req: any): Promise<User[]> {
     return this.usersService.getLinkedAccounts(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  @Get('search')
+  async searchUsers(@Query() userSearchDto: UserSearchDto) {
+    const [users, total] = await this.usersService.searchUsers(userSearchDto);
+    return {
+      data: users,
+      total,
+      page: userSearchDto.page,
+      limit: userSearchDto.limit,
+    };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

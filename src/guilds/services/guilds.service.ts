@@ -9,6 +9,10 @@ import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
 import { MemberDto } from '../../users/dto/user.dto';
 import { CharacterClass } from '../../users/enum/character-class.enum';
+import {
+  GuildSearchDto,
+  PaginatedGuildSearchResponseDto,
+} from '../dto/guild-search.dto';
 
 @Injectable()
 export class GuildsService {
@@ -140,6 +144,48 @@ export class GuildsService {
       members,
       memberClassesCount,
       allies,
+    };
+  }
+
+  async searchGuilds(
+    dto: GuildSearchDto,
+  ): Promise<PaginatedGuildSearchResponseDto> {
+    const query = this.guildRepository
+      .createQueryBuilder('guild')
+      .select(['guild.id', 'guild.name', 'guild.logo'])
+      .loadRelationCountAndMap('guild.membersCount', 'guild.members');
+
+    if (dto.name) {
+      query.andWhere('guild.name ILIKE :name', { name: `%${dto.name}%` });
+    }
+
+    if (dto.minimumAverageLevel) {
+      query.andWhere('guild.level >= :minimumAverageLevel', {
+        minimumAverageLevel: dto.minimumAverageLevel,
+      });
+    }
+
+    const total = await query.getCount();
+
+    const limit = dto.limit || 10;
+    const page = dto.page || 0;
+
+    query.take(limit).skip(page * limit);
+
+    const guilds = await query.getMany();
+
+    const data = guilds.map((guild) => ({
+      id: guild.id,
+      name: guild.name,
+      logo: guild.logo,
+      membersCount: (guild as any).membersCount,
+    }));
+
+    return {
+      data,
+      total,
+      page,
+      limit,
     };
   }
 

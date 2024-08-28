@@ -53,7 +53,4 @@ export class Guild {
 
   @Column({ type: 'bytea', nullable: true })
   logo: Buffer;
-
-  @Column({ default: true })
-  showInRegistry: boolean;
 }

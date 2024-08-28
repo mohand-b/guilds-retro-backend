@@ -18,6 +18,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
 import { GuildDto, GuildSummaryDto } from './dto/guild.dto';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
+import {
+  GuildSearchDto,
+  PaginatedGuildSearchResponseDto,
+} from './dto/guild-search.dto';
 
 @Controller('guilds')
 export class GuildsController {
@@ -32,6 +36,15 @@ export class GuildsController {
   @Roles(UserRole.MEMBER)
   getCurrentGuild(@Req() req: any): Promise<GuildDto> {
     return this.guildsService.findCurrentGuild(req.user.userId);
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  async searchGuilds(
+    @Query() guildSearchDto: GuildSearchDto,
+  ): Promise<PaginatedGuildSearchResponseDto> {
+    return this.guildsService.searchGuilds(guildSearchDto);
   }
 
   @Get('recruiting')

@@ -23,3 +23,18 @@ export class UserSearchDto {
   @IsOptional()
   limit?: number;
 }
+
+export class UserSearchResponseDto {
+  id: number;
+  username: string;
+  characterClass: CharacterClass;
+  gender: string;
+  characterLevel: number;
+}
+
+export class PaginatedUserSearchResponseDto {
+  total: number;
+  page: number;
+  limit: number;
+  results: UserSearchResponseDto[];
+}

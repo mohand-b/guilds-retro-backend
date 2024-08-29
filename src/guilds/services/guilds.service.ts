@@ -11,6 +11,7 @@ import { MemberDto } from '../../users/dto/user.dto';
 import { CharacterClass } from '../../users/enum/character-class.enum';
 import {
   GuildSearchDto,
+  GuildSearchResponseDto,
   PaginatedGuildSearchResponseDto,
 } from '../dto/guild-search.dto';
 
@@ -148,44 +149,44 @@ export class GuildsService {
   }
 
   async searchGuilds(
-    dto: GuildSearchDto,
+    guildSearchDto: GuildSearchDto,
   ): Promise<PaginatedGuildSearchResponseDto> {
-    const query = this.guildRepository
-      .createQueryBuilder('guild')
-      .select(['guild.id', 'guild.name', 'guild.logo'])
-      .loadRelationCountAndMap('guild.membersCount', 'guild.members');
+    const { name, minAverageLevel, page = 0, limit = 10 } = guildSearchDto;
 
-    if (dto.name) {
-      query.andWhere('guild.name ILIKE :name', { name: `%${dto.name}%` });
+    const queryBuilder = this.guildRepository
+      .createQueryBuilder('guild')
+      .leftJoin('guild.members', 'member')
+      .addSelect('COUNT(member.id)', 'membersCount')
+      .addSelect('AVG(member.characterLevel)', 'averageLevel')
+      .groupBy('guild.id');
+
+    if (name) {
+      queryBuilder.andWhere('guild.name ILIKE :name', { name: `%${name}%` });
     }
 
-    if (dto.minimumAverageLevel) {
-      query.andWhere('guild.level >= :minimumAverageLevel', {
-        minimumAverageLevel: dto.minimumAverageLevel,
+    if (minAverageLevel) {
+      queryBuilder.having('AVG(member.characterLevel) >= :minAverageLevel', {
+        minAverageLevel,
       });
     }
 
-    const total = await query.getCount();
+    queryBuilder.take(limit).skip(page * limit);
 
-    const limit = dto.limit || 10;
-    const page = dto.page || 0;
+    const { entities: guilds, raw } = await queryBuilder.getRawAndEntities();
 
-    query.take(limit).skip(page * limit);
-
-    const guilds = await query.getMany();
-
-    const data = guilds.map((guild) => ({
+    const results: GuildSearchResponseDto[] = guilds.map((guild, index) => ({
       id: guild.id,
       name: guild.name,
       logo: guild.logo,
-      membersCount: (guild as any).membersCount,
+      membersCount: parseInt(raw[index]['membersCount'], 10) || 0,
+      averageLevel: Math.round(parseFloat(raw[index]['averageLevel']) || 0),
     }));
 
     return {
-      data,
-      total,
+      total: guilds.length,
       page,
       limit,
+      results,
     };
   }
 

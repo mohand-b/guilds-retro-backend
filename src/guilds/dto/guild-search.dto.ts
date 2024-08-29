@@ -5,13 +5,13 @@ export class GuildSearchDto {
   name?: string;
 
   @IsOptional()
-  minimumAverageLevel?: number;
-
-  @IsOptional()
-  limit?: number;
+  minAverageLevel?: number;
 
   @IsOptional()
   page?: number;
+
+  @IsOptional()
+  limit?: number;
 }
 
 export class GuildSearchResponseDto {
@@ -19,11 +19,12 @@ export class GuildSearchResponseDto {
   name: string;
   logo: Buffer | null;
   membersCount: number;
+  averageLevel: number;
 }
 
 export class PaginatedGuildSearchResponseDto {
-  data: GuildSearchResponseDto[];
   total: number;
   page: number;
   limit: number;
+  results: GuildSearchResponseDto[];
 }

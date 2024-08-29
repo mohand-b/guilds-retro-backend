@@ -17,7 +17,11 @@ import { AccountLinkRequest } from './entities/account-link-request.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AccountLinkGroup } from './entities/account-link-group.entity';
 import { OneWordQuestionnaire } from './entities/one-word-questionnaire.entity';
-import { UserSearchDto } from './dto/user-search.dto';
+import {
+  PaginatedUserSearchResponseDto,
+  UserSearchDto,
+  UserSearchResponseDto,
+} from './dto/user-search.dto';
 
 @Injectable()
 export class UsersService {
@@ -498,7 +502,7 @@ export class UsersService {
 
   async searchUsers(
     userSearchDto: UserSearchDto,
-  ): Promise<[Partial<User>[], number]> {
+  ): Promise<PaginatedUserSearchResponseDto> {
     const {
       username,
       characterClass,
@@ -552,16 +556,20 @@ export class UsersService {
 
     const [users, count] = await query.getManyAndCount();
 
-    return [
-      users.map((user) => ({
-        id: user.id,
-        username: user.username,
-        characterClass: user.characterClass,
-        gender: user.gender,
-        characterLevel: user.characterLevel,
-      })),
-      count,
-    ];
+    const results: UserSearchResponseDto[] = users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      characterClass: user.characterClass,
+      gender: user.gender,
+      characterLevel: user.characterLevel,
+    }));
+
+    return {
+      total: count,
+      page,
+      limit,
+      results,
+    };
   }
 
   private normalizeUsername(username: string): string {

@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Guild } from '../entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { User } from '../../users/entities/user.entity';
-import { GuildDto, GuildSummaryDto } from '../dto/guild.dto';
+import {
+  AllySummaryDto,
+  GuildDto,
+  GuildSummaryDto,
+  PaginatedMemberResponseDto,
+} from '../dto/guild.dto';
 import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
 import { MemberDto } from '../../users/dto/user.dto';
@@ -18,6 +23,7 @@ import {
 @Injectable()
 export class GuildsService {
   constructor(
+    private dataSource: DataSource,
     @InjectRepository(Guild)
     private readonly guildRepository: Repository<Guild>,
     @InjectRepository(User)
@@ -31,75 +37,59 @@ export class GuildsService {
     });
   }
 
-  async findById(
-    userId: number,
+  async getGuildById(
     guildId: number,
-  ): Promise<GuildDto | GuildSummaryDto> {
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<GuildDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild', 'guild.allies'],
     });
 
-    if (!user || !user.guild) {
-      throw new NotFoundException(
-        'User not found or user is not part of any guild',
-      );
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
-    const targetGuild = await this.guildRepository.findOne({
+    const guild = await this.guildRepository.findOne({
       where: { id: guildId },
-      relations: ['members', 'allies', 'allies.members'],
+      relations: ['members', 'allies'],
     });
 
-    if (!targetGuild) {
+    if (!guild) {
       throw new NotFoundException('Guild not found');
     }
 
-    const memberClassesCount: Record<CharacterClass, number> = Object.values(
-      CharacterClass,
-    ).reduce(
-      (acc, key) => {
-        acc[key] = 0;
-        return acc;
-      },
-      {} as Record<CharacterClass, number>,
-    );
+    const isAlly = user.guild.allies.some((ally) => ally.id === guild.id);
 
-    targetGuild.members.forEach((member) => {
-      if (member.characterClass in memberClassesCount) {
-        memberClassesCount[member.characterClass]++;
-      }
-    });
+    const paginatedMembers = isAlly
+      ? await this.getPaginatedMembers(guild.id, page, limit)
+      : { results: [], total: 0, page, limit };
 
-    const isAlly = user.guild.allies.some((ally) => ally.id === targetGuild.id);
+    const allies = isAlly
+      ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
+      : [];
 
-    if (isAlly) {
-      const members = targetGuild.members.map((member) =>
-        this.toMemberDto(member),
-      );
-      const allies = targetGuild.allies.map((ally) =>
-        this.toGuildSummaryDto(ally),
-      );
-
-      return {
-        id: targetGuild.id,
-        name: targetGuild.name,
-        description: targetGuild.description,
-        logo: targetGuild.logo,
-        level: targetGuild.level,
-        members,
-        memberClassesCount,
-        allies,
-      };
-    } else {
-      return this.toGuildSummaryDto(targetGuild);
-    }
+    return {
+      id: guild.id,
+      name: guild.name,
+      description: guild.description,
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
+      level: guild.level,
+      members: paginatedMembers,
+      allies,
+    };
   }
 
-  async findCurrentGuild(userId: number): Promise<GuildDto> {
+  async getCurrentGuild(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<GuildDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['guild'],
+      relations: ['guild', 'guild.allies'],
     });
 
     if (!user || !user.guild) {
@@ -117,33 +107,21 @@ export class GuildsService {
       throw new NotFoundException('Guild not found');
     }
 
-    const members = guild.members.map((member) => this.toMemberDto(member));
-    const allies = guild.allies.map((ally) => this.toGuildSummaryDto(ally));
-
-    const memberClassesCount: Record<CharacterClass, number> = Object.values(
-      CharacterClass,
-    ).reduce(
-      (acc, key) => {
-        acc[key] = 0;
-        return acc;
-      },
-      {} as Record<CharacterClass, number>,
+    const paginatedMembers = await this.getPaginatedMembers(
+      guild.id,
+      page,
+      limit,
     );
 
-    guild.members.forEach((member) => {
-      if (member.characterClass in memberClassesCount) {
-        memberClassesCount[member.characterClass]++;
-      }
-    });
+    const allies = guild.allies.map((ally) => this.toAllySummaryDto(ally));
 
     return {
       id: guild.id,
       name: guild.name,
       description: guild.description,
-      logo: guild.logo,
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
-      members,
-      memberClassesCount,
+      members: paginatedMembers,
       allies,
     };
   }
@@ -151,7 +129,7 @@ export class GuildsService {
   async searchGuilds(
     guildSearchDto: GuildSearchDto,
   ): Promise<PaginatedGuildSearchResponseDto> {
-    const { name, minAverageLevel, page = 0, limit = 10 } = guildSearchDto;
+    const { name, minAverageLevel, page = 1, limit = 10 } = guildSearchDto;
 
     const queryBuilder = this.guildRepository
       .createQueryBuilder('guild')
@@ -170,7 +148,7 @@ export class GuildsService {
       });
     }
 
-    queryBuilder.take(limit).skip(page * limit);
+    queryBuilder.skip((page - 1) * limit).take(limit);
 
     const { entities: guilds, raw } = await queryBuilder.getRawAndEntities();
 
@@ -201,9 +179,13 @@ export class GuildsService {
       ],
     });
 
-    return guilds
-      .filter((guild) => guild.allies.length < 3)
-      .map((guild) => this.toGuildSummaryDto(guild));
+    const eligibleGuilds = guilds.filter((guild) => guild.allies.length < 3);
+
+    const guildsSummary = eligibleGuilds.map((guild) =>
+      this.toGuildSummaryDto(guild),
+    );
+
+    return guildsSummary;
   }
 
   async findRecruitingGuilds(): Promise<GuildSummaryDto[]> {
@@ -212,9 +194,15 @@ export class GuildsService {
       relations: ['members', 'allies'],
     });
 
-    return guilds
-      .filter((guild) => guild.members.length <= guild.capacity)
-      .map((guild) => this.toGuildSummaryDto(guild));
+    const recruitingGuilds = guilds.filter(
+      (guild) => guild.members.length <= guild.capacity,
+    );
+
+    const guildsSummary = await Promise.all(
+      recruitingGuilds.map((guild) => this.toGuildSummaryDto(guild)),
+    );
+
+    return guildsSummary;
   }
 
   async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
@@ -261,51 +249,31 @@ export class GuildsService {
   }
 
   toGuildSummaryDto(guild: Guild): GuildSummaryDto {
-    const leader = guild.members
-      ? guild.members.find((member) => member.role === UserRole.LEADER)
-      : null;
-
-    const nbOfMembers = guild.members ? guild.members.length : 0;
-    const averageLevelOfMembers =
-      nbOfMembers > 0
-        ? Math.round(
-            guild.members.reduce(
-              (sum, member) => sum + (member.characterLevel || 0),
-              0,
-            ) / nbOfMembers,
-          )
-        : 0;
-
-    const memberClassesCount: Record<CharacterClass, number> = Object.values(
-      CharacterClass,
-    ).reduce(
-      (acc, key) => {
-        acc[key] = 0;
-        return acc;
-      },
-      {} as Record<CharacterClass, number>,
+    const leader = guild.members.find(
+      (member) => member.role === UserRole.LEADER,
     );
 
-    if (guild.members) {
-      guild.members.forEach((member) => {
-        if (member.characterClass in memberClassesCount) {
-          memberClassesCount[member.characterClass]++;
-        }
-      });
-    }
+    const nbOfMembers = guild.members.length;
+    const averageLevelOfMembers = nbOfMembers
+      ? Math.round(
+          guild.members.reduce(
+            (sum, member) => sum + (member.characterLevel || 0),
+            0,
+          ) / nbOfMembers,
+        )
+      : 0;
 
     return {
       id: guild.id,
       name: guild.name,
       level: guild.level,
-      averageLevelOfMembers,
-      memberClassesCount,
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       capacity: guild.capacity,
+      averageLevelOfMembers,
       description: guild.description,
       nbOfMembers,
       nbOfAllies: guild.allies ? guild.allies.length : 0,
       leaderUsername: leader ? leader.username : 'Unknown',
-      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
     };
   }
 
@@ -318,5 +286,83 @@ export class GuildsService {
       characterLevel: user.characterLevel,
       role: user.role,
     };
+  }
+
+  async getPaginatedMembers(
+    guildId: number,
+    page = 1,
+    limit = 10,
+  ): Promise<PaginatedMemberResponseDto> {
+    const [members, total] = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.guildId = :guildId', { guildId })
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const memberDtos = members.map((member) => this.toMemberDto(member));
+
+    return {
+      results: memberDtos,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  toAllySummaryDto(guild: Guild): AllySummaryDto {
+    const leader = guild.members.find(
+      (member) => member.role === UserRole.LEADER,
+    );
+
+    const nbOfMembers = guild.members.length;
+    const averageLevelOfMembers = nbOfMembers
+      ? Math.round(
+          guild.members.reduce(
+            (sum, member) => sum + (member.characterLevel || 0),
+            0,
+          ) / nbOfMembers,
+        )
+      : 0;
+
+    return {
+      id: guild.id,
+      name: guild.name,
+      level: guild.level,
+      logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
+      averageLevelOfMembers,
+      nbOfMembers,
+      leaderUsername: leader ? leader.username : 'Unknown',
+    };
+  }
+
+  async getMemberClassesCount(
+    guildId: number,
+  ): Promise<Record<CharacterClass, number>> {
+    const result = await this.dataSource.manager.query(
+      `
+          SELECT "characterClass", COUNT(*) as count
+          FROM "user"
+          WHERE "guildId" = $1
+          GROUP BY "characterClass"
+      `,
+      [guildId],
+    );
+
+    const memberClassesCount: Record<CharacterClass, number> = Object.values(
+      CharacterClass,
+    ).reduce(
+      (acc, key) => {
+        acc[key] = 0;
+        return acc;
+      },
+      {} as Record<CharacterClass, number>,
+    );
+
+    result.forEach((row: { characterClass: CharacterClass; count: string }) => {
+      memberClassesCount[row.characterClass] = parseInt(row.count, 10);
+    });
+
+    return memberClassesCount;
   }
 }

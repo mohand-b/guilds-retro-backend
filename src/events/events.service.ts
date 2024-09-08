@@ -20,7 +20,6 @@ export class EventsService {
     private notificationsService: NotificationsService,
   ) {}
 
-  // events.service.ts
   async createEvent(
     createEventDto: CreateEventDto,
     creatorId: number,

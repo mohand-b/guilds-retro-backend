@@ -1,5 +1,4 @@
 import { MemberDto } from '../../users/dto/user.dto';
-import { CharacterClass } from '../../users/enum/character-class.enum';
 
 export class GuildDto {
   id: number;
@@ -7,9 +6,8 @@ export class GuildDto {
   description: string;
   logo: any;
   level: number;
-  members: MemberDto[];
-  memberClassesCount?: Record<CharacterClass, number>;
-  allies?: GuildSummaryDto[];
+  members?: PaginatedMemberResponseDto;
+  allies?: AllySummaryDto[];
 }
 
 export class GuildSummaryDto {
@@ -19,9 +17,31 @@ export class GuildSummaryDto {
   logo: string;
   capacity: number;
   averageLevelOfMembers: number;
-  memberClassesCount: Record<CharacterClass, number>;
   description: string;
   nbOfMembers: number;
   nbOfAllies: number;
   leaderUsername: string;
+}
+
+export class AllySummaryDto {
+  id: number;
+  name: string;
+  level: number;
+  logo: string;
+  averageLevelOfMembers: number;
+  nbOfMembers: number;
+  leaderUsername: string;
+}
+
+export class PaginatedMemberResponseDto {
+  results: MemberDto[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export class MemberSearchDto {
+  guildId: number;
+  page?: number;
+  limit?: number;
 }

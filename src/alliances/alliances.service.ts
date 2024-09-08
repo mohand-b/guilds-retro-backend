@@ -80,7 +80,7 @@ export class AlliancesService {
       (member) => member.role === UserRole.LEADER,
     );
 
-    this.notificationService.createNotification(
+    await this.notificationService.createNotification(
       targetGuildLeader.id,
       'alliance_request',
       `La guilde ${requesterGuild.name} souhaite s'allier avec ${targetGuild.name}`,
@@ -125,21 +125,25 @@ export class AlliancesService {
     alliance.status = AllianceStatusEnum.DISSOLVED;
     await this.allianceRepository.save(alliance);
 
-    await this.guildsService.removeAlly(
-      alliance.requesterGuild.id,
-      alliance.targetGuild.id,
-    );
-    await this.guildsService.removeAlly(
-      alliance.targetGuild.id,
-      alliance.requesterGuild.id,
-    );
+    await Promise.all([
+      this.guildsService.removeAlly(
+        alliance.requesterGuild.id,
+        alliance.targetGuild.id,
+      ),
+      this.guildsService.removeAlly(
+        alliance.targetGuild.id,
+        alliance.requesterGuild.id,
+      ),
+    ]);
 
     return {
       ...alliance,
-      requesterGuild: this.guildsService.toGuildSummaryDto(
+      requesterGuild: await this.guildsService.toGuildSummaryDto(
         alliance.requesterGuild,
       ),
-      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+      targetGuild: await this.guildsService.toGuildSummaryDto(
+        alliance.targetGuild,
+      ),
     };
   }
 
@@ -167,21 +171,25 @@ export class AlliancesService {
     alliance.status = AllianceStatusEnum.ACCEPTED;
     await this.allianceRepository.save(alliance);
 
-    await this.guildsService.addAlly(
-      alliance.requesterGuild.id,
-      alliance.targetGuild.id,
-    );
-    await this.guildsService.addAlly(
-      alliance.targetGuild.id,
-      alliance.requesterGuild.id,
-    );
+    await Promise.all([
+      this.guildsService.addAlly(
+        alliance.requesterGuild.id,
+        alliance.targetGuild.id,
+      ),
+      this.guildsService.addAlly(
+        alliance.targetGuild.id,
+        alliance.requesterGuild.id,
+      ),
+    ]);
 
     return {
       ...alliance,
-      requesterGuild: this.guildsService.toGuildSummaryDto(
+      requesterGuild: await this.guildsService.toGuildSummaryDto(
         alliance.requesterGuild,
       ),
-      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+      targetGuild: await this.guildsService.toGuildSummaryDto(
+        alliance.targetGuild,
+      ),
     };
   }
 
@@ -217,27 +225,24 @@ export class AlliancesService {
       relations: ['targetGuild', 'targetGuild.members', 'targetGuild.allies'],
     });
 
-    const transformedReceivedRequests: AllianceRequestDto[] =
-      receivedRequests.map((request) => {
-        return {
-          id: request.id,
-          requesterGuild: this.guildsService.toGuildSummaryDto(
-            request.requesterGuild,
-          ),
-          status: request.status,
-        };
-      });
+    const transformedReceivedRequests: AllianceRequestDto[] = await Promise.all(
+      receivedRequests.map(async (request) => ({
+        id: request.id,
+        requesterGuild: await this.guildsService.toGuildSummaryDto(
+          request.requesterGuild,
+        ),
+        status: request.status,
+      })),
+    );
 
-    const transformedSentRequests: AllianceRequestDto[] = sentRequests.map(
-      (request) => {
-        return {
-          id: request.id,
-          targetGuild: this.guildsService.toGuildSummaryDto(
-            request.targetGuild,
-          ),
-          status: request.status,
-        };
-      },
+    const transformedSentRequests: AllianceRequestDto[] = await Promise.all(
+      sentRequests.map(async (request) => ({
+        id: request.id,
+        targetGuild: await this.guildsService.toGuildSummaryDto(
+          request.targetGuild,
+        ),
+        status: request.status,
+      })),
     );
 
     return {

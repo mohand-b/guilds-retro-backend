@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { GuildDto, GuildSummaryDto } from './dto/guild.dto';
+import { GuildSummaryDto } from './dto/guild.dto';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
 import {
   GuildSearchDto,
@@ -34,8 +34,8 @@ export class GuildsController {
   @Get('current')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
-  getCurrentGuild(@Req() req: any): Promise<GuildDto> {
-    return this.guildsService.findCurrentGuild(req.user.userId);
+  getCurrentGuild(@Req() req: any): Promise<any> {
+    return this.guildsService.getCurrentGuild(req.user.userId);
   }
 
   @Get('search')
@@ -83,7 +83,7 @@ export class GuildsController {
   getGuildById(
     @Req() req: any,
     @Param('guildId', ParseIntPipe) guildId: number,
-  ): Promise<GuildDto | GuildSummaryDto> {
-    return this.guildsService.findById(req.user.userId, guildId);
+  ): Promise<any> {
+    return this.guildsService.getGuildById(req.user.userId, guildId);
   }
 }

@@ -184,7 +184,7 @@ export class AuthService {
   }
 
   private convertToUserLightDto(user: User): UserLightDto {
-    const guildDto: Omit<GuildDto, 'members'> = user.guild
+    const guildDto: GuildDto = user.guild
       ? {
           id: user.guild.id,
           name: user.guild.name,

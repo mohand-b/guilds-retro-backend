@@ -89,9 +89,11 @@ export class MembershipRequestsService {
       );
     }
 
+    const guildSummary = this.guildsService.toGuildSummaryDto(guild);
+
     return {
       ...newRequest,
-      guild: this.guildsService.toGuildSummaryDto(guild),
+      guild: guildSummary,
     };
   }
 
@@ -161,9 +163,11 @@ export class MembershipRequestsService {
       relations: ['guild', 'guild.members', 'guild.allies', 'user'],
     });
 
-    return requests.map((request) => ({
+    const requestsWithGuildSummary = requests.map((request) => ({
       ...request,
       guild: this.guildsService.toGuildSummaryDto(request.guild),
     }));
+
+    return requestsWithGuildSummary;
   }
 }

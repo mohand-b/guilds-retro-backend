@@ -11,12 +11,11 @@ import {
 } from '@nestjs/common';
 import { GuildsService } from './services/guilds.service';
 import { UsersService } from '../users/users.service';
-import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { GuildSummaryDto } from './dto/guild.dto';
+import { GuildSummaryDto, PaginatedMemberResponseDto } from './dto/guild.dto';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
 import {
   GuildSearchDto,
@@ -71,10 +70,19 @@ export class GuildsController {
   @Get(':guildId/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
-  getGuildMembers(
+  async getPaginatedMembers(
     @Param('guildId', ParseIntPipe) guildId: number,
-  ): Promise<User[]> {
-    return this.usersService.findMembersByGuild(guildId);
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<PaginatedMemberResponseDto> {
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+
+    return this.guildsService.getPaginatedMembers(
+      guildId,
+      pageNumber,
+      limitNumber,
+    );
   }
 
   @Get(':guildId')

@@ -30,6 +30,19 @@ export class GuildsService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
+    const logoBuffer: Buffer | null = createGuildDto.logo;
+
+    const guild = this.guildRepository.create({
+      ...createGuildDto,
+      logo: logoBuffer,
+      members: [creator],
+    });
+
+    await this.guildRepository.save(guild);
+    return guild;
+  }
+
   async findOne(id: number): Promise<Guild> {
     return this.guildRepository.findOne({
       where: { id },
@@ -38,8 +51,8 @@ export class GuildsService {
   }
 
   async getGuildById(
-    guildId: number,
     userId: number,
+    guildId: number,
     page: number = 1,
     limit: number = 10,
   ): Promise<GuildDto> {
@@ -54,7 +67,7 @@ export class GuildsService {
 
     const guild = await this.guildRepository.findOne({
       where: { id: guildId },
-      relations: ['members', 'allies'],
+      relations: ['members', 'allies', 'allies.members'],
     });
 
     if (!guild) {
@@ -82,14 +95,10 @@ export class GuildsService {
     };
   }
 
-  async getCurrentGuild(
-    userId: number,
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<GuildDto> {
+  async getCurrentGuild(userId: number): Promise<GuildDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['guild', 'guild.allies'],
+      relations: ['guild', 'guild.members', 'guild.allies'],
     });
 
     if (!user || !user.guild) {
@@ -100,18 +109,12 @@ export class GuildsService {
 
     const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
-      relations: ['members', 'allies', 'allies.members'],
+      relations: ['allies', 'allies.members'],
     });
 
     if (!guild) {
       throw new NotFoundException('Guild not found');
     }
-
-    const paginatedMembers = await this.getPaginatedMembers(
-      guild.id,
-      page,
-      limit,
-    );
 
     const allies = guild.allies.map((ally) => this.toAllySummaryDto(ally));
 
@@ -121,7 +124,6 @@ export class GuildsService {
       description: guild.description,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
-      members: paginatedMembers,
       allies,
     };
   }
@@ -205,19 +207,6 @@ export class GuildsService {
     return guildsSummary;
   }
 
-  async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
-    const logoBuffer: Buffer | null = createGuildDto.logo;
-
-    const guild = this.guildRepository.create({
-      ...createGuildDto,
-      logo: logoBuffer,
-      members: [creator],
-    });
-
-    await this.guildRepository.save(guild);
-    return guild;
-  }
-
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {
     const guild = await this.guildRepository.findOne({
       where: { id: guildId },
@@ -246,6 +235,28 @@ export class GuildsService {
 
     guild.allies = guild.allies.filter((ally) => ally.id !== allyId);
     await this.guildRepository.save(guild);
+  }
+
+  async getPaginatedMembers(
+    guildId: number,
+    page = 1,
+    limit = 10,
+  ): Promise<PaginatedMemberResponseDto> {
+    const [members, total] = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.guildId = :guildId', { guildId })
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const memberDtos = members.map((member) => this.toMemberDto(member));
+
+    return {
+      results: memberDtos,
+      total,
+      page,
+      limit,
+    };
   }
 
   toGuildSummaryDto(guild: Guild): GuildSummaryDto {
@@ -285,28 +296,6 @@ export class GuildsService {
       gender: user.gender,
       characterLevel: user.characterLevel,
       role: user.role,
-    };
-  }
-
-  async getPaginatedMembers(
-    guildId: number,
-    page = 1,
-    limit = 10,
-  ): Promise<PaginatedMemberResponseDto> {
-    const [members, total] = await this.userRepository
-      .createQueryBuilder('user')
-      .where('user.guildId = :guildId', { guildId })
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    const memberDtos = members.map((member) => this.toMemberDto(member));
-
-    return {
-      results: memberDtos,
-      total,
-      page,
-      limit,
     };
   }
 

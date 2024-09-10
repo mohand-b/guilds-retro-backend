@@ -65,24 +65,26 @@ export class GuildsService {
       throw new NotFoundException('User not found');
     }
 
+    const isAlly = user.guild.allies.some((ally) => ally.id === guildId);
+
     const guild = await this.guildRepository.findOne({
       where: { id: guildId },
-      relations: ['members', 'allies', 'allies.members'],
+      relations: ['allies', 'allies.members'],
     });
 
     if (!guild) {
       throw new NotFoundException('Guild not found');
     }
 
-    const isAlly = user.guild.allies.some((ally) => ally.id === guild.id);
+    const allies = isAlly
+      ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
+      : [];
 
     const paginatedMembers = isAlly
       ? await this.getPaginatedMembers(guild.id, page, limit)
       : { results: [], total: 0, page, limit };
 
-    const allies = isAlly
-      ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
-      : [];
+    console.log('paginatedMembers', paginatedMembers);
 
     return {
       id: guild.id,
@@ -98,7 +100,8 @@ export class GuildsService {
   async getCurrentGuild(userId: number): Promise<GuildDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['guild', 'guild.members', 'guild.allies'],
+      relations: ['guild'],
+      select: ['id'],
     });
 
     if (!user || !user.guild) {

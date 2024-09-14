@@ -6,6 +6,7 @@ export class GuildDto {
   description: string;
   logo: any;
   level: number;
+  nbOfMembers?: number;
   members?: PaginatedMemberResponseDto;
   allies?: AllySummaryDto[];
 }

@@ -76,6 +76,10 @@ export class GuildsService {
       throw new NotFoundException('Guild not found');
     }
 
+    const memberCount = await this.userRepository.count({
+      where: { guild: { id: guildId } },
+    });
+
     const allies = isAlly
       ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
       : [];
@@ -84,14 +88,13 @@ export class GuildsService {
       ? await this.getPaginatedMembers(guild.id, page, limit)
       : { results: [], total: 0, page, limit };
 
-    console.log('paginatedMembers', paginatedMembers);
-
     return {
       id: guild.id,
       name: guild.name,
       description: guild.description,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
+      nbOfMembers: memberCount,
       members: paginatedMembers,
       allies,
     };
@@ -119,6 +122,10 @@ export class GuildsService {
       throw new NotFoundException('Guild not found');
     }
 
+    const memberCount = await this.userRepository.count({
+      where: { guild: { id: guild.id } },
+    });
+
     const allies = guild.allies.map((ally) => this.toAllySummaryDto(ally));
 
     return {
@@ -127,6 +134,7 @@ export class GuildsService {
       description: guild.description,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
+      nbOfMembers: memberCount,
       allies,
     };
   }

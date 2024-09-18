@@ -51,6 +51,9 @@ export class Guild {
   @Column({ default: true })
   isRecruiting: boolean;
 
+  @Column({ default: true })
+  allowAlliances: boolean;
+
   @Column({ type: 'bytea', nullable: true })
   logo: Buffer;
 }

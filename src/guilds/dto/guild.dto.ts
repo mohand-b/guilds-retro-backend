@@ -9,6 +9,8 @@ export class GuildDto {
   nbOfMembers?: number;
   members?: PaginatedMemberResponseDto;
   allies?: AllySummaryDto[];
+  allowAlliances?: boolean;
+  isAlly?: boolean;
 }
 
 export class GuildSummaryDto {

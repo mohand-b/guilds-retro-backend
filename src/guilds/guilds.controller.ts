@@ -51,11 +51,6 @@ export class GuildsController {
     return this.guildsService.findRecruitingGuilds();
   }
 
-  @Get('to-alliance')
-  async findGuildsForAlliance(): Promise<GuildSummaryDto[]> {
-    return this.guildsService.findGuildsForAlliance();
-  }
-
   @Get('validate-guild-code')
   async validateGuildCode(@Query('code') code: string) {
     const guildName = await this.guildCreationCodeService.validateCode(code);

@@ -7,14 +7,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GuildsService } from '../guilds/services/guilds.service';
 import { Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
-import {
-  AllianceDto,
-  AllianceRequestDto,
-  GuildAllianceRequestsDto,
-} from './dto/alliance.dto';
+import { AllianceDto, GuildAllianceRequestsDto } from './dto/alliance.dto';
 import { AllianceStatusEnum } from './enum/alliance-status.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UserRole } from '../users/enum/user-role.enum';
+import { Guild } from '../guilds/entities/guild.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AlliancesService {
@@ -22,6 +20,10 @@ export class AlliancesService {
     private guildsService: GuildsService,
     @InjectRepository(Alliance)
     private allianceRepository: Repository<Alliance>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Guild)
+    private guildRepository: Repository<Guild>,
     private notificationService: NotificationsService,
   ) {}
 
@@ -34,8 +36,14 @@ export class AlliancesService {
     }
 
     const [requesterGuild, targetGuild] = await Promise.all([
-      this.guildsService.findOne(requesterGuildId),
-      this.guildsService.findOne(targetGuildId),
+      this.guildRepository.findOne({
+        where: { id: requesterGuildId },
+        relations: ['allies'],
+      }),
+      this.guildRepository.findOne({
+        where: { id: targetGuildId },
+        relations: ['allies'],
+      }),
     ]);
 
     if (!requesterGuild || !targetGuild) {
@@ -49,36 +57,15 @@ export class AlliancesService {
       throw new BadRequestException('These guilds are already allied');
     }
 
-    const existingRequest = await this.allianceRepository.findOne({
-      where: [
-        {
-          requesterGuild: requesterGuild,
-          targetGuild: targetGuild,
-          status: 'PENDING',
-        },
-        {
-          requesterGuild: targetGuild,
-          targetGuild: requesterGuild,
-          status: 'PENDING',
-        },
-      ],
-    });
-
-    if (existingRequest && existingRequest.status === 'PENDING') {
-      throw new BadRequestException(
-        'There is already a pending alliance request between these guilds',
-      );
-    }
-
     const newRequest = this.allianceRepository.create({
       requesterGuild,
       targetGuild,
       status: 'PENDING',
     });
 
-    const targetGuildLeader = targetGuild.members.find(
-      (member) => member.role === UserRole.LEADER,
-    );
+    const targetGuildLeader = await this.userRepository.findOne({
+      where: { guild: { id: targetGuild.id }, role: UserRole.LEADER },
+    });
 
     await this.notificationService.createNotification(
       targetGuildLeader.id,
@@ -108,14 +95,7 @@ export class AlliancesService {
           targetGuild: { id: guildId1 },
         },
       ],
-      relations: [
-        'requesterGuild',
-        'requesterGuild.members',
-        'requesterGuild.allies',
-        'targetGuild',
-        'targetGuild.members',
-        'targetGuild.allies',
-      ],
+      relations: ['requesterGuild', 'targetGuild'],
     });
 
     if (!alliance) {
@@ -138,12 +118,10 @@ export class AlliancesService {
 
     return {
       ...alliance,
-      requesterGuild: await this.guildsService.toGuildSummaryDto(
+      requesterGuild: this.guildsService.toGuildSummaryDto(
         alliance.requesterGuild,
       ),
-      targetGuild: await this.guildsService.toGuildSummaryDto(
-        alliance.targetGuild,
-      ),
+      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
     };
   }
 
@@ -184,12 +162,10 @@ export class AlliancesService {
 
     return {
       ...alliance,
-      requesterGuild: await this.guildsService.toGuildSummaryDto(
+      requesterGuild: this.guildsService.toGuildSummaryDto(
         alliance.requesterGuild,
       ),
-      targetGuild: await this.guildsService.toGuildSummaryDto(
-        alliance.targetGuild,
-      ),
+      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
     };
   }
 
@@ -225,29 +201,19 @@ export class AlliancesService {
       relations: ['targetGuild', 'targetGuild.members', 'targetGuild.allies'],
     });
 
-    const transformedReceivedRequests: AllianceRequestDto[] = await Promise.all(
-      receivedRequests.map(async (request) => ({
+    return {
+      receivedAllianceRequests: receivedRequests.map((request) => ({
         id: request.id,
-        requesterGuild: await this.guildsService.toGuildSummaryDto(
+        requesterGuild: this.guildsService.toGuildSummaryDto(
           request.requesterGuild,
         ),
         status: request.status,
       })),
-    );
-
-    const transformedSentRequests: AllianceRequestDto[] = await Promise.all(
-      sentRequests.map(async (request) => ({
+      sentAllianceRequests: sentRequests.map((request) => ({
         id: request.id,
-        targetGuild: await this.guildsService.toGuildSummaryDto(
-          request.targetGuild,
-        ),
+        targetGuild: this.guildsService.toGuildSummaryDto(request.targetGuild),
         status: request.status,
       })),
-    );
-
-    return {
-      receivedAllianceRequests: transformedReceivedRequests,
-      sentAllianceRequests: transformedSentRequests,
     };
   }
 }

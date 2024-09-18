@@ -42,7 +42,6 @@ export class AlliancesService {
       }),
       this.guildRepository.findOne({
         where: { id: targetGuildId },
-        relations: ['allies'],
       }),
     ]);
 
@@ -67,15 +66,17 @@ export class AlliancesService {
       where: { guild: { id: targetGuild.id }, role: UserRole.LEADER },
     });
 
-    await this.notificationService.createNotification(
-      targetGuildLeader.id,
-      'alliance_request',
-      `La guilde ${requesterGuild.name} souhaite s'allier avec ${targetGuild.name}`,
-      undefined,
-      undefined,
-      undefined,
-      newRequest.id,
-    );
+    if (targetGuildLeader) {
+      await this.notificationService.createNotification(
+        targetGuildLeader.id,
+        'alliance_request',
+        `La guilde ${requesterGuild.name} souhaite s'allier avec ${targetGuild.name}`,
+        undefined,
+        undefined,
+        undefined,
+        newRequest.id,
+      );
+    }
 
     return this.allianceRepository.save(newRequest);
   }
@@ -95,7 +96,12 @@ export class AlliancesService {
           targetGuild: { id: guildId1 },
         },
       ],
-      relations: ['requesterGuild', 'targetGuild'],
+      relations: [
+        'requesterGuild',
+        'requesterGuild.members',
+        'targetGuild',
+        'targetGuild.members',
+      ],
     });
 
     if (!alliance) {
@@ -131,10 +137,8 @@ export class AlliancesService {
       relations: [
         'requesterGuild',
         'requesterGuild.members',
-        'requesterGuild.allies',
         'targetGuild',
         'targetGuild.members',
-        'targetGuild.allies',
       ],
     });
 
@@ -189,16 +193,12 @@ export class AlliancesService {
   ): Promise<GuildAllianceRequestsDto> {
     const receivedRequests = await this.allianceRepository.find({
       where: { targetGuild: { id: guildId } },
-      relations: [
-        'requesterGuild',
-        'requesterGuild.members',
-        'requesterGuild.allies',
-      ],
+      relations: ['requesterGuild', 'requesterGuild.members'],
     });
 
     const sentRequests = await this.allianceRepository.find({
       where: { requesterGuild: { id: guildId } },
-      relations: ['targetGuild', 'targetGuild.members', 'targetGuild.allies'],
+      relations: ['targetGuild', 'targetGuild.members'],
     });
 
     return {

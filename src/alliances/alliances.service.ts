@@ -193,12 +193,16 @@ export class AlliancesService {
   ): Promise<GuildAllianceRequestsDto> {
     const receivedRequests = await this.allianceRepository.find({
       where: { targetGuild: { id: guildId } },
-      relations: ['requesterGuild', 'requesterGuild.members'],
+      relations: [
+        'requesterGuild',
+        'requesterGuild.members',
+        'requesterGuild.allies',
+      ],
     });
 
     const sentRequests = await this.allianceRepository.find({
       where: { requesterGuild: { id: guildId } },
-      relations: ['targetGuild', 'targetGuild.members'],
+      relations: ['targetGuild', 'targetGuild.members', 'targetGuild.allies'],
     });
 
     return {

@@ -65,6 +65,7 @@ export class GuildsService {
     const guild: Guild = await this.guildRepository.findOne({
       where: { id: guildId },
       relations: ['allies', 'allies.members'],
+      select: ['id', 'name', 'description', 'logo', 'level', 'allowAlliances'],
     });
 
     if (!guild) {
@@ -75,9 +76,16 @@ export class GuildsService {
       where: { guild: { id: guildId } },
     });
 
+    const leader = await this.userRepository.findOne({
+      where: { guild: { id: guildId }, role: UserRole.LEADER },
+      select: ['id', 'username'],
+    });
+
     const allies: AllySummaryDto[] = isAlly
       ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
       : [];
+
+    const allyCount: number = guild.allies.length;
 
     return {
       id: guild.id,
@@ -85,10 +93,12 @@ export class GuildsService {
       description: guild.description,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
-      nbOfMembers: memberCount,
+      memberCount,
       isAlly,
       allowAlliances: guild.allowAlliances,
       allies,
+      allyCount,
+      leaderUsername: leader ? leader.username : 'Unknown',
     };
   }
 
@@ -96,7 +106,7 @@ export class GuildsService {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild'],
-      select: ['id'],
+      select: ['id', 'guild'],
     });
 
     if (!user || !user.guild) {
@@ -108,6 +118,7 @@ export class GuildsService {
     const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
       relations: ['allies', 'allies.members'],
+      select: ['id', 'name', 'description', 'logo', 'level', 'allowAlliances'],
     });
 
     if (!guild) {
@@ -118,6 +129,11 @@ export class GuildsService {
       where: { guild: { id: guild.id } },
     });
 
+    const leader = await this.userRepository.findOne({
+      where: { guild: { id: guild.id }, role: UserRole.LEADER },
+      select: ['id', 'username'],
+    });
+
     const allies = guild.allies.map((ally) => this.toAllySummaryDto(ally));
 
     return {
@@ -126,8 +142,10 @@ export class GuildsService {
       description: guild.description,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       level: guild.level,
-      nbOfMembers: memberCount,
+      memberCount,
+      allowAlliances: guild.allowAlliances,
       allies,
+      leaderUsername: leader ? leader.username : 'Unknown',
     };
   }
 
@@ -247,13 +265,13 @@ export class GuildsService {
       (member) => member.role === UserRole.LEADER,
     );
 
-    const nbOfMembers = guild.members.length;
-    const averageLevelOfMembers = nbOfMembers
+    const memberCount = guild.members.length;
+    const averageLevelOfMembers = memberCount
       ? Math.round(
           guild.members.reduce(
             (sum, member) => sum + (member.characterLevel || 0),
             0,
-          ) / nbOfMembers,
+          ) / memberCount,
         )
       : 0;
 
@@ -265,8 +283,8 @@ export class GuildsService {
       capacity: guild.capacity,
       averageLevelOfMembers,
       description: guild.description,
-      nbOfMembers,
-      nbOfAllies: guild.allies ? guild.allies.length : 0,
+      memberCount,
+      allyCount: guild.allies ? guild.allies.length : 0,
       leaderUsername: leader ? leader.username : 'Unknown',
     };
   }
@@ -287,13 +305,13 @@ export class GuildsService {
       (member) => member.role === UserRole.LEADER,
     );
 
-    const nbOfMembers = guild.members.length;
-    const averageLevelOfMembers = nbOfMembers
+    const memberCount = guild.members.length;
+    const averageLevelOfMembers = memberCount
       ? Math.round(
           guild.members.reduce(
             (sum, member) => sum + (member.characterLevel || 0),
             0,
-          ) / nbOfMembers,
+          ) / memberCount,
         )
       : 0;
 
@@ -303,7 +321,7 @@ export class GuildsService {
       level: guild.level,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       averageLevelOfMembers,
-      nbOfMembers,
+      memberCount,
       leaderUsername: leader ? leader.username : 'Unknown',
     };
   }

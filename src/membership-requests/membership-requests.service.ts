@@ -89,7 +89,7 @@ export class MembershipRequestsService {
       );
     }
 
-    const guildSummary = this.guildsService.toGuildSummaryDto(guild);
+    const guildSummary = this.guildsService.toGuildDto(guild);
 
     return {
       ...newRequest,
@@ -165,7 +165,7 @@ export class MembershipRequestsService {
 
     const requestsWithGuildSummary = requests.map((request) => ({
       ...request,
-      guild: this.guildsService.toGuildSummaryDto(request.guild),
+      guild: this.guildsService.toGuildDto(request.guild),
     }));
 
     return requestsWithGuildSummary;

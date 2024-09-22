@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { GuildSummaryDto, PaginatedMemberResponseDto } from './dto/guild.dto';
+import { GuildDto, PaginatedMemberResponseDto } from './dto/guild.dto';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
 import {
   GuildSearchDto,
@@ -47,7 +47,7 @@ export class GuildsController {
   }
 
   @Get('recruiting')
-  findAllRecruitingGuilds(): Promise<GuildSummaryDto[]> {
+  findAllRecruitingGuilds(): Promise<GuildDto[]> {
     return this.guildsService.findRecruitingGuilds();
   }
 

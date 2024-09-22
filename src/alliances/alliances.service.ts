@@ -122,12 +122,15 @@ export class AlliancesService {
       ),
     ]);
 
+    const requesterGuild = this.guildsService.toGuildDto(
+      alliance.requesterGuild,
+    );
+    const targetGuild = this.guildsService.toGuildDto(alliance.targetGuild);
+
     return {
       ...alliance,
-      requesterGuild: this.guildsService.toGuildSummaryDto(
-        alliance.requesterGuild,
-      ),
-      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+      requesterGuild,
+      targetGuild,
     };
   }
 
@@ -166,10 +169,8 @@ export class AlliancesService {
 
     return {
       ...alliance,
-      requesterGuild: this.guildsService.toGuildSummaryDto(
-        alliance.requesterGuild,
-      ),
-      targetGuild: this.guildsService.toGuildSummaryDto(alliance.targetGuild),
+      requesterGuild: this.guildsService.toGuildDto(alliance.requesterGuild),
+      targetGuild: this.guildsService.toGuildDto(alliance.targetGuild),
     };
   }
 
@@ -208,14 +209,12 @@ export class AlliancesService {
     return {
       receivedAllianceRequests: receivedRequests.map((request) => ({
         id: request.id,
-        requesterGuild: this.guildsService.toGuildSummaryDto(
-          request.requesterGuild,
-        ),
+        requesterGuild: this.guildsService.toGuildDto(request.requesterGuild),
         status: request.status,
       })),
       sentAllianceRequests: sentRequests.map((request) => ({
         id: request.id,
-        targetGuild: this.guildsService.toGuildSummaryDto(request.targetGuild),
+        targetGuild: this.guildsService.toGuildDto(request.targetGuild),
         status: request.status,
       })),
     };

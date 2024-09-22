@@ -4,12 +4,7 @@ import { Guild } from '../entities/guild.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { User } from '../../users/entities/user.entity';
-import {
-  AllySummaryDto,
-  GuildDto,
-  GuildSummaryDto,
-  PaginatedMemberResponseDto,
-} from '../dto/guild.dto';
+import { GuildDto, PaginatedMemberResponseDto } from '../dto/guild.dto';
 import { convertBufferToBase64 } from '../../common/utils/image.utils';
 import { UserRole } from '../../users/enum/user-role.enum';
 import { MemberDto } from '../../users/dto/user.dto';
@@ -81,7 +76,7 @@ export class GuildsService {
       select: ['id', 'username'],
     });
 
-    const allies: AllySummaryDto[] = isAlly
+    const allies: GuildDto[] = isAlly
       ? guild.allies.map((ally) => this.toAllySummaryDto(ally))
       : [];
 
@@ -191,21 +186,50 @@ export class GuildsService {
     };
   }
 
-  async findRecruitingGuilds(): Promise<GuildSummaryDto[]> {
-    const guilds = await this.guildRepository.find({
-      where: { isRecruiting: true },
-      relations: ['members', 'allies'],
-    });
+  async findRecruitingGuilds(): Promise<GuildDto[]> {
+    const guilds = await this.guildRepository
+      .createQueryBuilder('guild')
+      .select([
+        'guild.id',
+        'guild.name',
+        'guild.description',
+        'guild.logo',
+        'guild.level',
+        'guild.capacity',
+      ])
+      .leftJoin('guild.members', 'member')
+      .leftJoin('guild.allies', 'ally')
+      .leftJoin('guild.members', 'leader', 'leader.role = :leaderRole', {
+        leaderRole: UserRole.LEADER,
+      })
+      .where('guild.isRecruiting = true')
+      .groupBy('guild.id')
+      .addGroupBy('leader.username')
+      .having('COUNT(member.id) < guild.capacity')
+      .addSelect('COUNT(DISTINCT member.id)', 'memberCount')
+      .addSelect('COUNT(DISTINCT ally.id)', 'allyCount')
+      .addSelect('AVG(member.characterLevel)', 'averageLevelOfMembers')
+      .addSelect('leader.username', 'leaderUsername')
+      .getRawMany();
 
-    const recruitingGuilds = guilds.filter(
-      (guild) => guild.members.length <= guild.capacity,
-    );
+    const guildDtos: GuildDto[] = guilds.map((guildRaw) => ({
+      id: guildRaw.guild_id,
+      name: guildRaw.guild_name,
+      description: guildRaw.guild_description,
+      logo: guildRaw.guild_logo
+        ? convertBufferToBase64(guildRaw.guild_logo)
+        : null,
+      level: guildRaw.guild_level,
+      capacity: guildRaw.guild_capacity,
+      leaderUsername: guildRaw.leaderUsername || 'Unknown',
+      memberCount: parseInt(guildRaw.memberCount, 10) || 0,
+      allyCount: parseInt(guildRaw.allyCount, 10) || 0,
+      averageLevelOfMembers: Math.round(
+        parseFloat(guildRaw.averageLevelOfMembers) || 0,
+      ),
+    }));
 
-    const guildsSummary = await Promise.all(
-      recruitingGuilds.map((guild) => this.toGuildSummaryDto(guild)),
-    );
-
-    return guildsSummary;
+    return guildDtos;
   }
 
   async addAlly(guildId: number, allyGuildId: number): Promise<void> {
@@ -260,7 +284,7 @@ export class GuildsService {
     };
   }
 
-  toGuildSummaryDto(guild: Guild): GuildSummaryDto {
+  toGuildDto(guild: Guild): GuildDto {
     const leader = guild.members.find(
       (member) => member.role === UserRole.LEADER,
     );
@@ -300,7 +324,7 @@ export class GuildsService {
     };
   }
 
-  toAllySummaryDto(guild: Guild): AllySummaryDto {
+  toAllySummaryDto(guild: Guild): GuildDto {
     const leader = guild.members.find(
       (member) => member.role === UserRole.LEADER,
     );
@@ -318,6 +342,7 @@ export class GuildsService {
     return {
       id: guild.id,
       name: guild.name,
+      description: guild.description,
       level: guild.level,
       logo: guild.logo ? convertBufferToBase64(guild.logo) : null,
       averageLevelOfMembers,

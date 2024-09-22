@@ -1,9 +1,7 @@
-import { GuildSummaryDto } from '../../guilds/dto/guild.dto';
-
 export class AllianceRequestDto {
   id: number;
-  requesterGuild?: GuildSummaryDto;
-  targetGuild?: GuildSummaryDto;
+  requesterGuild?: any;
+  targetGuild?: any;
   status: string;
 }
 
@@ -14,7 +12,7 @@ export class GuildAllianceRequestsDto {
 
 export class AllianceDto {
   id: number;
-  requesterGuild: GuildSummaryDto;
-  targetGuild: GuildSummaryDto;
+  requesterGuild: any;
+  targetGuild: any;
   status: string;
 }

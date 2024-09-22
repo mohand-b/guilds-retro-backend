@@ -8,24 +8,12 @@ export class GuildDto {
   level: number;
   leaderUsername?: string;
   memberCount?: number;
-  members?: PaginatedMemberResponseDto;
-  allies?: AllySummaryDto[];
   allyCount?: number;
+  capacity?: number;
+  averageLevelOfMembers?: number;
+  allies?: GuildDto[];
   allowAlliances?: boolean;
   isAlly?: boolean;
-}
-
-export class GuildSummaryDto {
-  id: number;
-  name: string;
-  level: number;
-  logo: string;
-  capacity: number;
-  averageLevelOfMembers: number;
-  description: string;
-  memberCount: number;
-  allyCount: number;
-  leaderUsername: string;
 }
 
 export class AllySummaryDto {

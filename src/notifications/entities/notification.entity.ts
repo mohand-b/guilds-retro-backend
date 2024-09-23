@@ -7,7 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Event } from '../../events/entities/event.entity';
+import { Event } from '../../events/entities/event';
 import { AccountLinkRequest } from '../../users/entities/account-link-request.entity';
 import { MembershipRequest } from '../../membership-requests/entities/membership-request.entity';
 import { Alliance } from '../../alliances/entities/alliance.entity';

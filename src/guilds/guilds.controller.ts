@@ -21,6 +21,7 @@ import {
   GuildSearchDto,
   PaginatedGuildSearchResponseDto,
 } from './dto/guild-search.dto';
+import { EventStatsDto } from './dto/guild-stats.dto';
 
 @Controller('guilds')
 export class GuildsController {
@@ -88,5 +89,12 @@ export class GuildsController {
     @Param('guildId', ParseIntPipe) guildId: number,
   ): Promise<any> {
     return this.guildsService.getGuildById(req.user.userId, guildId);
+  }
+
+  @Get(':guildId/event-stats')
+  async getEventStats(
+    @Param('guildId') guildId: number,
+  ): Promise<EventStatsDto> {
+    return this.guildsService.getEventStats(guildId);
   }
 }

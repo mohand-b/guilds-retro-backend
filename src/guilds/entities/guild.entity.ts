@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinTable,
   ManyToMany,
@@ -15,6 +16,9 @@ import { Exclude } from 'class-transformer';
 export class Guild {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @CreateDateColumn()
+  creationDate: Date;
 
   @Column()
   name: string;

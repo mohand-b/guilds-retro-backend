@@ -14,6 +14,9 @@ import {
   GuildSearchResponseDto,
   PaginatedGuildSearchResponseDto,
 } from '../dto/guild-search.dto';
+import { Event } from '../../events/entities/event';
+import { differenceInMonths, differenceInWeeks } from 'date-fns';
+import { EventStatsDto } from '../dto/guild-stats.dto';
 
 @Injectable()
 export class GuildsService {
@@ -23,6 +26,8 @@ export class GuildsService {
     private readonly guildRepository: Repository<Guild>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Event)
+    private readonly eventRepository: Repository<Event>,
   ) {}
 
   async create(createGuildDto: CreateGuildDto, creator: User): Promise<Guild> {
@@ -383,5 +388,67 @@ export class GuildsService {
     });
 
     return memberClassesCount;
+  }
+
+  async getEventStats(guildId: number): Promise<EventStatsDto> {
+    const guild = await this.guildRepository.findOne({
+      where: { id: guildId },
+      relations: ['members'],
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guilde non trouvée');
+    }
+
+    const memberIds = guild.members.map((member) => member.id);
+
+    const events = await this.eventRepository
+      .createQueryBuilder('event')
+      .where('event.creatorId IN (:...memberIds)', { memberIds })
+      .getMany();
+
+    const weeksSinceCreation = differenceInWeeks(
+      new Date(),
+      guild.creationDate,
+    );
+    const monthsSinceCreation = differenceInMonths(
+      new Date(),
+      guild.creationDate,
+    );
+
+    const totalEvents = events.length;
+
+    const averageEventsPerWeek =
+      weeksSinceCreation > 0 ? totalEvents / weeksSinceCreation : totalEvents;
+
+    const averageEventsPerMonth =
+      monthsSinceCreation > 0 ? totalEvents / monthsSinceCreation : totalEvents;
+
+    const eventsByType = events.reduce(
+      (acc, event) => {
+        acc[event.type] = (acc[event.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const averageEventsByTypePerWeek: Record<string, number> = {};
+    for (const [type, count] of Object.entries(eventsByType)) {
+      averageEventsByTypePerWeek[type] =
+        weeksSinceCreation > 0 ? count / weeksSinceCreation : count;
+    }
+
+    const averageEventsByTypePerMonth: Record<string, number> = {};
+    for (const [type, count] of Object.entries(eventsByType)) {
+      averageEventsByTypePerMonth[type] =
+        monthsSinceCreation > 0 ? count / monthsSinceCreation : count;
+    }
+
+    return {
+      averageEventsPerWeek,
+      averageEventsPerMonth,
+      averageEventsByTypePerWeek,
+      averageEventsByTypePerMonth,
+    };
   }
 }

@@ -5,7 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { Event } from './entities/event.entity';
+import { Event } from './entities/event';
 import { EventFeedDto } from './dto/event-feed.dto';
 
 @Controller('events')

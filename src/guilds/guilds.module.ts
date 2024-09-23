@@ -8,10 +8,11 @@ import { User } from '../users/entities/user.entity';
 import { UsersModule } from '../users/users.module';
 import { GuildCreationCodeService } from './services/guild-creation-code.service';
 import { GuildCreationCode } from './entities/guild-creation-code.entity';
+import { Event } from '../events/entities/event';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Guild, GuildCreationCode, Alliance, User]),
+    TypeOrmModule.forFeature([Guild, GuildCreationCode, Alliance, Event, User]),
     UsersModule,
   ],
   controllers: [GuildsController],

@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { PostEntity } from '../../posts/entities/post.entity';
-import { Event } from '../../events/entities/event.entity';
+import { Event } from '../../events/entities/event';
 
 @Entity()
 export class FeedEntity {

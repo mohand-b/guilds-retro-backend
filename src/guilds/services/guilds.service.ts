@@ -65,7 +65,15 @@ export class GuildsService {
     const guild: Guild = await this.guildRepository.findOne({
       where: { id: guildId },
       relations: ['allies', 'allies.members'],
-      select: ['id', 'name', 'description', 'logo', 'level', 'allowAlliances'],
+      select: [
+        'id',
+        'name',
+        'description',
+        'logo',
+        'level',
+        'allowAlliances',
+        'hideStats',
+      ],
     });
 
     if (!guild) {
@@ -99,6 +107,7 @@ export class GuildsService {
       allies,
       allyCount,
       leaderUsername: leader ? leader.username : 'Unknown',
+      hideStats: guild.hideStats,
     };
   }
 
@@ -118,7 +127,15 @@ export class GuildsService {
     const guild = await this.guildRepository.findOne({
       where: { id: user.guild.id },
       relations: ['allies', 'allies.members'],
-      select: ['id', 'name', 'description', 'logo', 'level', 'allowAlliances'],
+      select: [
+        'id',
+        'name',
+        'description',
+        'logo',
+        'level',
+        'allowAlliances',
+        'hideStats',
+      ],
     });
 
     if (!guild) {
@@ -146,6 +163,7 @@ export class GuildsService {
       allowAlliances: guild.allowAlliances,
       allies,
       leaderUsername: leader ? leader.username : 'Unknown',
+      hideStats: guild.hideStats,
     };
   }
 
@@ -315,6 +333,7 @@ export class GuildsService {
       memberCount,
       allyCount: guild.allies ? guild.allies.length : 0,
       leaderUsername: leader ? leader.username : 'Unknown',
+      hideStats: guild.hideStats,
     };
   }
 
@@ -449,5 +468,42 @@ export class GuildsService {
 
     const averageLevel = parseInt(result.averageLevel, 10);
     return isNaN(averageLevel) ? 0 : averageLevel;
+  }
+
+  async updateGuildLevel(guildId: number, newLevel: number): Promise<GuildDto> {
+    const guild = await this.guildRepository.findOne({
+      where: { id: guildId },
+      relations: ['members'],
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guilde non trouvée');
+    }
+
+    guild.level = newLevel;
+
+    await this.guildRepository.save(guild);
+
+    return this.toGuildDto(guild);
+  }
+
+  async updateHideStats(
+    guildId: number,
+    hideStats: boolean,
+  ): Promise<GuildDto> {
+    const guild = await this.guildRepository.findOne({
+      where: { id: guildId },
+      relations: ['members'],
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guilde non trouvée');
+    }
+
+    guild.hideStats = hideStats;
+
+    await this.guildRepository.save(guild);
+
+    return this.toGuildDto(guild);
   }
 }

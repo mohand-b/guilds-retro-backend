@@ -14,6 +14,7 @@ export class GuildDto {
   allies?: GuildDto[];
   allowAlliances?: boolean;
   isAlly?: boolean;
+  hideStats?: boolean;
 }
 
 export class AllySummaryDto {

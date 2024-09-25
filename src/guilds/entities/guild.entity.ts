@@ -58,6 +58,9 @@ export class Guild {
   @Column({ default: true })
   allowAlliances: boolean;
 
+  @Column({ default: false })
+  hideStats: boolean;
+
   @Column({ type: 'bytea', nullable: true })
   logo: Buffer;
 }

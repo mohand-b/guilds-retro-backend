@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -117,5 +118,25 @@ export class GuildsController {
     @Param('guildId') guildId: number,
   ): Promise<number> {
     return this.guildsService.getAverageMemberLevel(guildId);
+  }
+
+  @Patch(':guildId/level')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OFFICER)
+  async updateGuildLevel(
+    @Param('guildId', ParseIntPipe) guildId: number,
+    @Body('level') level: number,
+  ) {
+    return this.guildsService.updateGuildLevel(guildId, level);
+  }
+
+  @Patch(':guildId/hide-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LEADER)
+  async updateHideStats(
+    @Param('guildId', ParseIntPipe) guildId: number,
+    @Body('hideStats') hideStats: boolean,
+  ) {
+    return this.guildsService.updateHideStats(guildId, hideStats);
   }
 }

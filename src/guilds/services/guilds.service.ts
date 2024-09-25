@@ -424,7 +424,7 @@ export class GuildsService {
     const averageEventsPerMonth =
       monthsSinceCreation > 0 ? totalEvents / monthsSinceCreation : totalEvents;
 
-    const eventsByType = events.reduce(
+    const totalEventsByType = events.reduce(
       (acc, event) => {
         acc[event.type] = (acc[event.type] || 0) + 1;
         return acc;
@@ -432,23 +432,11 @@ export class GuildsService {
       {} as Record<string, number>,
     );
 
-    const averageEventsByTypePerWeek: Record<string, number> = {};
-    for (const [type, count] of Object.entries(eventsByType)) {
-      averageEventsByTypePerWeek[type] =
-        weeksSinceCreation > 0 ? count / weeksSinceCreation : count;
-    }
-
-    const averageEventsByTypePerMonth: Record<string, number> = {};
-    for (const [type, count] of Object.entries(eventsByType)) {
-      averageEventsByTypePerMonth[type] =
-        monthsSinceCreation > 0 ? count / monthsSinceCreation : count;
-    }
-
     return {
+      totalEvents,
+      totalEventsByType,
       averageEventsPerWeek,
       averageEventsPerMonth,
-      averageEventsByTypePerWeek,
-      averageEventsByTypePerMonth,
     };
   }
 }

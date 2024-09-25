@@ -22,6 +22,7 @@ import {
   PaginatedGuildSearchResponseDto,
 } from './dto/guild-search.dto';
 import { EventStatsDto } from './dto/guild-stats.dto';
+import { CharacterClass } from '../users/enum/character-class.enum';
 
 @Controller('guilds')
 export class GuildsController {
@@ -91,7 +92,18 @@ export class GuildsController {
     return this.guildsService.getGuildById(req.user.userId, guildId);
   }
 
+  @Get(':guildId/member-classes-count')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  async getMemberClassesCount(
+    @Param('guildId') guildId: number,
+  ): Promise<Record<CharacterClass, number>> {
+    return this.guildsService.getMemberClassesCount(guildId);
+  }
+
   @Get(':guildId/event-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
   async getEventStats(
     @Param('guildId') guildId: number,
   ): Promise<EventStatsDto> {

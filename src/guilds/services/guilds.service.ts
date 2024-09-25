@@ -439,4 +439,15 @@ export class GuildsService {
       averageEventsPerMonth,
     };
   }
+
+  async getAverageMemberLevel(guildId: number): Promise<number> {
+    const result = await this.userRepository
+      .createQueryBuilder('user')
+      .select('ROUND(AVG(user.characterLevel))', 'averageLevel')
+      .where('user.guildId = :guildId', { guildId })
+      .getRawOne();
+
+    const averageLevel = parseInt(result.averageLevel, 10);
+    return isNaN(averageLevel) ? 0 : averageLevel;
+  }
 }

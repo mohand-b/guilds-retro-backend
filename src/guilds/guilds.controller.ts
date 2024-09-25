@@ -109,4 +109,13 @@ export class GuildsController {
   ): Promise<EventStatsDto> {
     return this.guildsService.getEventStats(guildId);
   }
+
+  @Get(':guildId/average-member-level')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
+  async getAverageMemberLevel(
+    @Param('guildId') guildId: number,
+  ): Promise<number> {
+    return this.guildsService.getAverageMemberLevel(guildId);
+  }
 }

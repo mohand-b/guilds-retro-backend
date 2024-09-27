@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { FeedEntity } from './entities/feed.entity';
+import { FeedDto } from './entities/dto/feed.dto';
 
 @Controller('feed')
 export class FeedController {
@@ -21,7 +21,7 @@ export class FeedController {
     total: number;
     page: number;
     limit: number;
-    data: FeedEntity[];
+    data: FeedDto[];
   }> {
     return this.feedService.getFeed(req.user.userId, page, limit);
   }

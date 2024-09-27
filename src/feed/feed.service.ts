@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { FeedEntity } from './entities/feed.entity';
+import { FeedDto } from './entities/dto/feed.dto';
+import { Comment } from '../comments/entities/comment.entity';
 
 @Injectable()
 export class FeedService {
@@ -11,6 +13,8 @@ export class FeedService {
     private userRepository: Repository<User>,
     @InjectRepository(FeedEntity)
     private feedRepository: Repository<FeedEntity>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
   ) {}
 
   async getFeed(
@@ -21,15 +25,16 @@ export class FeedService {
     total: number;
     page: number;
     limit: number;
-    data: FeedEntity[];
+    data: FeedDto[];
   }> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['guild', 'guild.allies'],
     });
 
-    if (!user || !user.guild)
+    if (!user || !user.guild) {
       throw new Error('User not found or user does not belong to any guild');
+    }
 
     const guildIds: number[] = [
       user.guild.id,
@@ -66,17 +71,79 @@ export class FeedService {
     );
 
     const [allResults, total] = await query.getManyAndCount();
-
     const paginatedResults: FeedEntity[] = allResults.slice(
       (page - 1) * limit,
       page * limit,
     );
 
+    const postIds = paginatedResults
+      .filter((feed) => feed.post)
+      .map((feed) => feed.post.id);
+
+    const commentCounts = await this.commentRepository
+      .createQueryBuilder('comment')
+      .select('comment.postId', 'postId')
+      .addSelect('COUNT(comment.id)', 'count')
+      .where('comment.postId IN (:...postIds)', { postIds })
+      .groupBy('comment.postId')
+      .getRawMany();
+
+    const commentCountMap = commentCounts.reduce(
+      (acc, { postId, count }) => {
+        acc[postId] = parseInt(count, 10);
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
+
+    const feedDtos: FeedDto[] = paginatedResults.map((feedEntity) => {
+      const feedDto: FeedDto = {
+        id: feedEntity.id,
+        createdAt: feedEntity.createdAt,
+      };
+
+      if (feedEntity.post) {
+        const commentCount = commentCountMap[feedEntity.post.id] || 0;
+
+        feedDto.post = {
+          id: feedEntity.post.id,
+          text: feedEntity.post.text,
+          user: feedEntity.post.user,
+          createdAt: feedEntity.post.createdAt,
+          updatedAt: feedEntity.post.updatedAt,
+          image: feedEntity.post.image,
+          likes: feedEntity.post.likes,
+          commentCount,
+        };
+      }
+
+      if (feedEntity.event) {
+        feedDto.event = {
+          id: feedEntity.event.id,
+          type: feedEntity.event.type,
+          title: feedEntity.event.title,
+          dungeonName: feedEntity.event.dungeonName,
+          arenaTargets: feedEntity.event.arenaTargets,
+          description: feedEntity.event.description,
+          maxParticipants: feedEntity.event.maxParticipants,
+          minLevel: feedEntity.event.minLevel,
+          requiredClasses: feedEntity.event.requiredClasses,
+          requiresOptimization: feedEntity.event.requiresOptimization,
+          creator: feedEntity.event.creator,
+          participants: feedEntity.event.participants,
+          isAccessibleToAllies: feedEntity.event.isAccessibleToAllies,
+          createdAt: feedEntity.event.createdAt,
+        };
+      }
+
+      return feedDto;
+    });
+
     return {
       total,
       page,
       limit,
-      data: paginatedResults,
+      data: feedDtos,
     };
   }
 }

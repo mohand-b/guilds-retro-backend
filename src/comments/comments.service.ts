@@ -6,6 +6,7 @@ import { PostEntity } from '../posts/entities/post.entity';
 import { Comment } from './entities/comment.entity';
 import { CommentDto } from './dto/comment.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { PaginatedCommentsDto } from './dto/paginated-comments.dto';
 
 @Injectable()
 export class CommentsService {
@@ -50,5 +51,34 @@ export class CommentsService {
     };
 
     return commentDto;
+  }
+
+  async getPaginatedComments(
+    postId: number,
+    page = 1,
+    limit = 3,
+  ): Promise<PaginatedCommentsDto> {
+    const [comments, total] = await this.commentRepository.findAndCount({
+      where: { post: { id: postId } },
+      relations: ['user'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    const commentDtos: CommentDto[] = comments.map((comment) => ({
+      id: comment.id,
+      text: comment.text,
+      createdAt: comment.createdAt,
+      postId: postId,
+      user: comment.user,
+    }));
+
+    return {
+      total,
+      page,
+      limit,
+      comments: commentDtos,
+    };
   }
 }

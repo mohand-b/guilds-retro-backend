@@ -40,6 +40,8 @@ export class PostsService {
       ],
     });
 
+    console.log(completePost);
+
     if (completePost) {
       const feedEntry: FeedEntity = this.feedRepository.create({
         post: completePost,

@@ -34,7 +34,7 @@ export class Event {
   @Column({ nullable: true })
   description: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   date: Date;
 
   @Column()
@@ -59,7 +59,7 @@ export class Event {
   @Column({ default: false })
   isAccessibleToAllies: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @OneToOne(() => FeedEntity, { nullable: true, onDelete: 'CASCADE' })

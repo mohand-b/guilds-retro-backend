@@ -26,7 +26,7 @@ export class Notification {
   @Column()
   message: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @Column({ default: false })

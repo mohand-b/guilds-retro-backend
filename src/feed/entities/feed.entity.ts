@@ -21,6 +21,6 @@ export class FeedEntity {
   @JoinColumn({ name: 'eventId' })
   event: Event;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

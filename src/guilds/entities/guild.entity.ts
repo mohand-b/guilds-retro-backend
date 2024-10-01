@@ -17,7 +17,7 @@ export class Guild {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   creationDate: Date;
 
   @Column()

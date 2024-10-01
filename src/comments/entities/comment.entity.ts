@@ -22,6 +22,6 @@ export class Comment {
   @ManyToOne(() => PostEntity, (post) => post.comments, { onDelete: 'CASCADE' })
   post: PostEntity;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

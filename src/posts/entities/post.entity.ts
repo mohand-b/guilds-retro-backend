@@ -41,10 +41,10 @@ export class PostEntity {
   })
   likes: Like[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
   @Column({ type: 'bytea', nullable: true })

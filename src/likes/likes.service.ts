@@ -9,6 +9,7 @@ import { Like } from './entities/like.entity';
 import { UsersService } from '../users/users.service';
 import { PostsService } from '../posts/posts.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PostEntity } from '../posts/entities/post.entity';
 
 @Injectable()
 export class LikesService {
@@ -16,6 +17,8 @@ export class LikesService {
     private usersService: UsersService,
     private postsService: PostsService,
     private notificationsService: NotificationsService,
+    @InjectRepository(PostEntity)
+    private postRepository: Repository<PostEntity>,
     @InjectRepository(Like)
     private likeRepository: Repository<Like>,
   ) {}
@@ -72,11 +75,14 @@ export class LikesService {
   }
 
   async getLikesByPost(postId: number): Promise<Like[]> {
-    const post = await this.postsService.findOneById(postId);
-    if (!post) {
+    const postEntity = await this.postRepository.findOne({
+      where: { id: postId },
+    });
+
+    if (!postEntity) {
       throw new NotFoundException('Post not found');
     }
 
-    return this.likeRepository.find({ where: { post } });
+    return this.likeRepository.find({ where: { post: postEntity } });
   }
 }

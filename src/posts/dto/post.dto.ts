@@ -5,11 +5,11 @@ import { Comment } from '../../comments/entities/comment.entity';
 export class PostDto {
   id: number;
   text: string;
-  user: User;
+  user: Partial<User>;
   createdAt: Date;
   updatedAt: Date;
   image: Buffer;
-  likes: Like[];
+  likes: Partial<Like>[];
   commentCount: number;
   comments?: Comment[];
 }

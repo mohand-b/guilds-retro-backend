@@ -13,12 +13,12 @@ import {
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreatePostDto } from './dto/create-post.dto';
-import { PostEntity } from './entities/post.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/enum/user-role.enum';
 import { Roles } from '../common/decorators/roles.decorator';
 import { FeedEntity } from '../feed/entities/feed.entity';
+import { PostDto } from './dto/post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -48,7 +48,7 @@ export class PostsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  getPost(@Param('id') id: number): Promise<PostEntity> {
+  getPost(@Param('id') id: number): Promise<PostDto> {
     return this.postsService.findOneById(id);
   }
 

@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
 import { Repository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { FeedEntity } from '../feed/entities/feed.entity';
 import { User } from '../users/entities/user.entity';
+import { Comment } from '../comments/entities/comment.entity';
+import { PostDto } from './dto/post.dto';
+import { Like } from '../likes/entities/like.entity';
 
 @Injectable()
 export class PostsService {
@@ -15,6 +18,8 @@ export class PostsService {
     private feedRepository: Repository<FeedEntity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
   ) {}
 
   async create(
@@ -57,11 +62,46 @@ export class PostsService {
     await this.postRepository.delete(id);
   }
 
-  async findOneById(id: number): Promise<PostEntity> {
-    return await this.postRepository.findOne({
+  async findOneById(id: number): Promise<PostDto> {
+    const post = await this.postRepository.findOne({
       where: { id },
-      relations: ['user', 'likes', 'comments', 'likes.user', 'comments.user'],
+      relations: ['user', 'user.guild', 'likes', 'likes.user'],
     });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    const commentCount = await this.commentRepository.count({
+      where: { post: { id: post.id } },
+    });
+
+    return {
+      id: post.id,
+      text: post.text,
+      user: {
+        id: post.user.id,
+        username: post.user.username,
+        characterClass: post.user.characterClass,
+        gender: post.user.gender,
+        guild: post.user.guild,
+        role: post.user.role,
+      },
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      image: post.image,
+      likes: post.likes.map(
+        (like) =>
+          ({
+            id: like.id,
+            user: {
+              id: like.user.id,
+              username: like.user.username,
+            },
+          }) as Partial<Like>,
+      ),
+      commentCount,
+    };
   }
 
   async findLastFivePostsByUser(

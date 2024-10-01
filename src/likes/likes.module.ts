@@ -6,10 +6,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { PostsModule } from '../posts/posts.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PostEntity } from '../posts/entities/post.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Like]),
+    TypeOrmModule.forFeature([Like, PostEntity]),
     UsersModule,
     PostsModule,
     NotificationsModule,

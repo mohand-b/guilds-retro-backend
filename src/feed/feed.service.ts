@@ -80,21 +80,25 @@ export class FeedService {
       .filter((feed) => feed.post)
       .map((feed) => feed.post.id);
 
-    const commentCounts = await this.commentRepository
-      .createQueryBuilder('comment')
-      .select('comment.postId', 'postId')
-      .addSelect('COUNT(comment.id)', 'count')
-      .where('comment.postId IN (:...postIds)', { postIds })
-      .groupBy('comment.postId')
-      .getRawMany();
+    let commentCountMap: Record<number, number> = {};
 
-    const commentCountMap = commentCounts.reduce(
-      (acc, { postId, count }) => {
-        acc[postId] = parseInt(count, 10);
-        return acc;
-      },
-      {} as Record<number, number>,
-    );
+    if (postIds.length > 0) {
+      const commentCounts = await this.commentRepository
+        .createQueryBuilder('comment')
+        .select('comment.postId', 'postId')
+        .addSelect('COUNT(comment.id)', 'count')
+        .where('comment.postId IN (:...postIds)', { postIds })
+        .groupBy('comment.postId')
+        .getRawMany();
+
+      commentCountMap = commentCounts.reduce(
+        (acc, { postId, count }) => {
+          acc[postId] = parseInt(count, 10);
+          return acc;
+        },
+        {} as Record<number, number>,
+      );
+    }
 
     const feedDtos: FeedDto[] = paginatedResults.map((feedEntity) => {
       const feedDto: FeedDto = {

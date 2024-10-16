@@ -126,6 +126,7 @@ export class FeedService {
           id: feedEntity.event.id,
           type: feedEntity.event.type,
           title: feedEntity.event.title,
+          date: feedEntity.event.date,
           dungeonName: feedEntity.event.dungeonName,
           arenaTargets: feedEntity.event.arenaTargets,
           description: feedEntity.event.description,

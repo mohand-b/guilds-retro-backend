@@ -4,6 +4,7 @@ export class EventDto {
   id: number;
   type: string;
   title?: string;
+  date: Date;
   dungeonName?: string;
   arenaTargets?: string;
   description?: string;

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Event } from './entities/event';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UsersService } from '../users/users.service';
@@ -172,5 +172,44 @@ export class EventsService {
       feedType: 'event',
       feedId: `event-${savedEvent.id}`,
     };
+  }
+
+  async getEventById(eventId: number, userId: number): Promise<Event> {
+    const user = await this.usersService.findOneById(userId, {
+      relations: ['guild', 'guild.allies'],
+    });
+
+    if (!user || !user.guild) {
+      throw new NotFoundException(
+        'User not found or user does not belong to any guild',
+      );
+    }
+
+    const guildIds: number[] = [user.guild.id];
+    const allyGuildIds: number[] = user.guild.allies.map((guild) => guild.id);
+
+    const query = this.eventsRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.participants', 'participants')
+      .leftJoinAndSelect('event.creator', 'creator')
+      .leftJoinAndSelect('creator.guild', 'creatorGuild')
+      .leftJoinAndSelect('creatorGuild.allies', 'allyGuild')
+      .where('event.id = :eventId', { eventId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('creatorGuild.id IN (:...guildIds)', { guildIds }).orWhere(
+            'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
+            { allyGuildIds },
+          );
+        }),
+      );
+
+    const event = await query.getOne();
+
+    if (!event) {
+      throw new NotFoundException('Event not found or not accessible');
+    }
+
+    return event;
   }
 }

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -56,5 +65,16 @@ export class EventsController {
   ): Promise<EventFeedDto> {
     const userId = req.user.userId;
     return this.eventsService.withdrawFromEvent(eventId, userId);
+  }
+
+  @Get(':eventId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  getEvent(
+    @Param('eventId', ParseIntPipe) eventId: number,
+    @Req() req: any,
+  ): Promise<Event> {
+    const userId = req.user.userId;
+    return this.eventsService.getEventById(eventId, userId);
   }
 }

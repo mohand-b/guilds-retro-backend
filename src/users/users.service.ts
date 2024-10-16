@@ -46,7 +46,7 @@ export class UsersService {
       where: { username: this.normalizeUsername(username) },
     });
     if (existingUser) {
-      throw new UnauthorizedException('Username already taken');
+      throw new ConflictException('Username already taken');
     }
 
     const user = this.userRepository.create({
@@ -107,7 +107,7 @@ export class UsersService {
         hideProfile: user.hideProfile,
         characterClass: user.characterClass,
         gender: user.gender,
-        level: user.characterLevel,
+        characterLevel: user.characterLevel,
       };
     }
 

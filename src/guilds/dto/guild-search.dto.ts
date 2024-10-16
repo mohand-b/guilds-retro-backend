@@ -20,6 +20,7 @@ export class GuildSearchResponseDto {
   logo: Buffer | null;
   membersCount: number;
   averageLevel: number;
+  leaderUsername: string;
 }
 
 export class PaginatedGuildSearchResponseDto {

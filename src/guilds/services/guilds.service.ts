@@ -177,7 +177,12 @@ export class GuildsService {
       .leftJoin('guild.members', 'member')
       .addSelect('COUNT(member.id)', 'membersCount')
       .addSelect('AVG(member.characterLevel)', 'averageLevel')
-      .groupBy('guild.id');
+      .leftJoin('guild.members', 'leader', 'leader.role = :leaderRole', {
+        leaderRole: UserRole.LEADER,
+      })
+      .addSelect('leader.username', 'leaderUsername')
+      .groupBy('guild.id')
+      .addGroupBy('leader.id');
 
     if (name) {
       queryBuilder.andWhere('guild.name ILIKE :name', { name: `%${name}%` });
@@ -197,6 +202,7 @@ export class GuildsService {
       id: guild.id,
       name: guild.name,
       logo: guild.logo,
+      leaderUsername: raw[index]['leaderUsername'] || 'Unknown',
       membersCount: parseInt(raw[index]['membersCount'], 10) || 0,
       averageLevel: Math.round(parseFloat(raw[index]['averageLevel']) || 0),
     }));

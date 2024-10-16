@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { Comment } from '../comments/entities/comment.entity';
 import { PostDto } from './dto/post.dto';
 import { Like } from '../likes/entities/like.entity';
+import { FeedDto } from '../feed/entities/dto/feed.dto';
 
 @Injectable()
 export class PostsService {
@@ -22,10 +23,7 @@ export class PostsService {
     private commentRepository: Repository<Comment>,
   ) {}
 
-  async create(
-    createPostDto: CreatePostDto,
-    userId: number,
-  ): Promise<FeedEntity> {
+  async create(createPostDto: CreatePostDto, userId: number): Promise<FeedDto> {
     const post: PostEntity = this.postRepository.create({
       ...createPostDto,
       user: { id: userId } as any,
@@ -35,27 +33,55 @@ export class PostsService {
 
     const completePost: PostEntity = await this.postRepository.findOne({
       where: { id: savedPost.id },
-      relations: [
-        'user',
-        'user.guild',
-        'likes',
-        'likes.user',
-        'comments',
-        'comments.user',
-      ],
+      relations: ['user', 'user.guild', 'likes', 'likes.user'],
     });
 
-    console.log(completePost);
-
-    if (completePost) {
-      const feedEntry: FeedEntity = this.feedRepository.create({
-        post: completePost,
-        createdAt: new Date(),
-      });
-      return this.feedRepository.save(feedEntry);
+    if (!completePost) {
+      throw new Error('Post creation failed');
     }
 
-    throw new Error('Post creation failed');
+    const commentCount = await this.commentRepository.count({
+      where: { post: savedPost },
+    });
+
+    const feedEntry: FeedEntity = this.feedRepository.create({
+      post: completePost,
+      createdAt: new Date(),
+    });
+
+    const savedFeed = await this.feedRepository.save(feedEntry);
+
+    const postDto: PostDto = {
+      id: completePost.id,
+      text: completePost.text,
+      user: {
+        id: completePost.user.id,
+        username: completePost.user.username,
+        characterClass: completePost.user.characterClass,
+        gender: completePost.user.gender,
+        guild: completePost.user.guild,
+      },
+      createdAt: completePost.createdAt,
+      updatedAt: completePost.updatedAt,
+      image: completePost.image,
+      likes: completePost.likes.map(
+        (like) =>
+          ({
+            id: like.id,
+            user: {
+              id: like.user.id,
+              username: like.user.username,
+            },
+          }) as Partial<Like>,
+      ),
+      commentCount,
+    };
+
+    return {
+      id: savedFeed.id,
+      post: postDto,
+      createdAt: savedFeed.createdAt,
+    };
   }
 
   async delete(id: number): Promise<void> {

@@ -9,7 +9,7 @@ export class PostDto {
   createdAt: Date;
   updatedAt: Date;
   image: Buffer;
-  likes: Partial<Like>[];
   commentCount: number;
+  likes?: Partial<Like>[];
   comments?: Comment[];
 }

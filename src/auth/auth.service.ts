@@ -198,7 +198,7 @@ export class AuthService {
       id: user.id,
       username: user.username,
       characterClass: user.characterClass,
-      jobs: user.jobs,
+      jobs: user.jobs || [],
       gender: user.gender,
       characterLevel: user.characterLevel,
       guild: guildDto,

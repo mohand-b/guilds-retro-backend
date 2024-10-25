@@ -24,6 +24,7 @@ import {
 } from './dto/guild-search.dto';
 import { EventStatsDto } from './dto/guild-stats.dto';
 import { CharacterClass } from '../users/enum/character-class.enum';
+import { UpdateGuildDto } from './dto/update-guild.dto';
 
 @Controller('guilds')
 export class GuildsController {
@@ -120,14 +121,14 @@ export class GuildsController {
     return this.guildsService.getAverageMemberLevel(guildId);
   }
 
-  @Patch(':guildId/level')
+  @Patch(':guildId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OFFICER)
-  async updateGuildLevel(
+  async updateGuild(
     @Param('guildId', ParseIntPipe) guildId: number,
-    @Body('level') level: number,
+    @Body() updateGuildDto: UpdateGuildDto,
   ) {
-    return this.guildsService.updateGuildLevel(guildId, level);
+    return this.guildsService.updateGuild(guildId, updateGuildDto);
   }
 
   @Patch(':guildId/hide-stats')

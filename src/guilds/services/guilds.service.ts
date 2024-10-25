@@ -17,6 +17,7 @@ import {
 import { Event } from '../../events/entities/event';
 import { differenceInMonths, differenceInWeeks } from 'date-fns';
 import { EventStatsDto } from '../dto/guild-stats.dto';
+import { UpdateGuildDto } from '../dto/update-guild.dto';
 
 @Injectable()
 export class GuildsService {
@@ -476,7 +477,10 @@ export class GuildsService {
     return isNaN(averageLevel) ? 0 : averageLevel;
   }
 
-  async updateGuildLevel(guildId: number, newLevel: number): Promise<GuildDto> {
+  async updateGuild(
+    guildId: number,
+    updateGuildDto: UpdateGuildDto,
+  ): Promise<GuildDto> {
     const guild = await this.guildRepository.findOne({
       where: { id: guildId },
       relations: ['members'],
@@ -486,7 +490,12 @@ export class GuildsService {
       throw new NotFoundException('Guilde non trouvée');
     }
 
-    guild.level = newLevel;
+    if (updateGuildDto.level !== undefined) {
+      guild.level = updateGuildDto.level;
+    }
+    if (updateGuildDto.description !== undefined) {
+      guild.description = updateGuildDto.description;
+    }
 
     await this.guildRepository.save(guild);
 

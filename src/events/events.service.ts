@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Event } from './entities/event';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UsersService } from '../users/users.service';
@@ -194,18 +194,15 @@ export class EventsService {
       .leftJoinAndSelect('event.creator', 'creator')
       .leftJoinAndSelect('creator.guild', 'creatorGuild')
       .leftJoinAndSelect('creatorGuild.allies', 'allyGuild')
-      .where('event.id = :eventId', { eventId });
-
-    if (guildIds.length > 0) {
-      query.andWhere('creatorGuild.id IN (:...guildIds)', { guildIds });
-    }
-
-    if (allyGuildIds.length > 0) {
-      query.orWhere(
-        'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
-        { allyGuildIds },
+      .where('event.id = :eventId', { eventId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('creatorGuild.id IN (:...guildIds)', { guildIds }).orWhere(
+            'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
+            { allyGuildIds },
+          );
+        }),
       );
-    }
 
     const event = await query.getOne();
 

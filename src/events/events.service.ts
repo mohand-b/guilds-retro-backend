@@ -43,6 +43,7 @@ export class EventsService {
     });
 
     if (completeEvent) {
+      console.log('Event created:', completeEvent);
       const feedEntry = this.feedRepository.create({
         event: completeEvent,
         createdAt: new Date(),

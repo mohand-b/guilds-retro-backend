@@ -1,8 +1,5 @@
 import {
-  IsArray,
-  IsBoolean,
   IsDateString,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -26,6 +23,9 @@ export class CreateEventDto {
   arenaTargets?: string;
 
   @IsOptional()
+  image?: Buffer;
+
+  @IsOptional()
   @IsString()
   description: string;
 
@@ -33,24 +33,19 @@ export class CreateEventDto {
   @IsNotEmpty()
   date: string;
 
-  @IsInt()
   @IsNotEmpty()
   maxParticipants: number;
 
   @IsOptional()
-  @IsInt()
   minLevel?: number;
 
   @IsOptional()
-  @IsArray()
   @IsString({ each: true })
   requiredClasses?: string[];
 
   @IsOptional()
-  @IsBoolean()
   requiresOptimization?: boolean;
 
   @IsOptional()
-  @IsBoolean()
   isAccessibleToAllies?: boolean;
 }

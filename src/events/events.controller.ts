@@ -6,7 +6,9 @@ import {
   ParseIntPipe,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -16,6 +18,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
 import { Event } from './entities/event';
 import { EventFeedDto } from './dto/event-feed.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('events')
 export class EventsController {
@@ -24,10 +27,15 @@ export class EventsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MEMBER)
+  @UseInterceptors(FileInterceptor('image'))
   createEvent(
+    @UploadedFile() file: Express.Multer.File,
     @Body() createEventDto: CreateEventDto,
     @Req() req: any,
   ): Promise<Event> {
+    if (file && file.buffer) {
+      createEventDto.image = file.buffer;
+    }
     const creatorId = req.user.userId;
     return this.eventsService.createEvent(createEventDto, creatorId);
   }

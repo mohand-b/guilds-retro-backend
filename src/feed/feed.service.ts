@@ -129,6 +129,7 @@ export class FeedService {
           date: feedEntity.event.date,
           dungeonName: feedEntity.event.dungeonName,
           arenaTargets: feedEntity.event.arenaTargets,
+          image: feedEntity.event.image,
           description: feedEntity.event.description,
           maxParticipants: feedEntity.event.maxParticipants,
           minLevel: feedEntity.event.minLevel,

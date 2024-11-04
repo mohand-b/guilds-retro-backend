@@ -7,6 +7,7 @@ export class EventDto {
   date: Date;
   dungeonName?: string;
   arenaTargets?: string;
+  image?: Buffer;
   description?: string;
   maxParticipants: number;
   minLevel?: number;

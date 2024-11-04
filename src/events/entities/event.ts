@@ -31,6 +31,9 @@ export class Event {
   @Column({ nullable: true })
   title?: string;
 
+  @Column({ type: 'bytea', nullable: true })
+  image?: Buffer;
+
   @Column({ nullable: true })
   description: string;
 

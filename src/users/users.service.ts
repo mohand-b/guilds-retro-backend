@@ -128,6 +128,18 @@ export class UsersService {
     });
   }
 
+  async updateUserLevel(userId: number, newLevel: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException(`User with id '${userId}' not found`);
+    }
+
+    user.characterLevel = newLevel;
+
+    return this.userRepository.save(user);
+  }
+
   async updateFeedPreference(
     userId: number,
     feedClosingToGuildAndAllies: boolean,

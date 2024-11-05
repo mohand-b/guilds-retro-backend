@@ -53,6 +53,13 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
+  @Patch('level')
+  async updateUserLevel(@Req() req: any, @Body('newLevel') newLevel: number) {
+    return this.usersService.updateUserLevel(req.user.userId, newLevel);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CANDIDATE)
   @Patch('hide-profile')
   async updateHideProfile(
     @Req() req: any,

@@ -22,7 +22,6 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:8080',
     'https://guilds-boune-angular-da8925932923.herokuapp.com',
-    '*',
   ];
 
   app.enableCors({
@@ -32,6 +31,26 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
+  });
+
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      res.header(
+        'Access-Control-Allow-Origin',
+        allowedOrigins.includes(req.headers.origin) ? req.headers.origin : '',
+      );
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Accept, Authorization',
+      );
+      res.header('Access-Control-Allow-Credentials', 'true');
+      return res.sendStatus(204);
+    }
+    next();
   });
 
   await app.listen(process.env.PORT || 3000);

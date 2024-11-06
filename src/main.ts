@@ -20,7 +20,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: 'http://localhost:4200',
+    origin: [
+      'http://localhost:4200',
+      'https://guilds-boune-angular-da8925932923.herokuapp.com',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,

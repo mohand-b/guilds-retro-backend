@@ -19,8 +19,13 @@ async function bootstrap() {
     }),
   );
 
+  const allowedOrigins = [
+    'http://localhost:4200',
+    'https://guilds-boune-angular-da8925932923.herokuapp.com',
+  ];
+
   app.enableCors({
-    origin: 'https://guilds-boune-angular-da8925932923.herokuapp.com',
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,

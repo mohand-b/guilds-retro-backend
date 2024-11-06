@@ -20,7 +20,7 @@ async function bootstrap() {
   );
 
   const allowedOrigins = [
-    'http://localhost:4200',
+    'http://localhost:8080',
     'https://guilds-boune-angular-da8925932923.herokuapp.com',
   ];
 

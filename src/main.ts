@@ -19,24 +19,11 @@ async function bootstrap() {
     }),
   );
 
-  app.use((req, res, next) => {
-    res.header(
-      'Access-Control-Allow-Origin',
-      'https://guilds-boune-angular-da8925932923.herokuapp.com',
-    );
-    res.header(
-      'Access-Control-Allow-Methods',
-      'GET,HEAD,PUT,PATCH,POST,DELETE',
-    );
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Accept, Authorization',
-    );
-    res.header('Access-Control-Allow-Credentials', 'true');
-    if (req.method === 'OPTIONS') {
-      return res.status(204).end();
-    }
-    next();
+  app.enableCors({
+    origin: 'https://guilds-boune-angular-da8925932923.herokuapp.com',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
   });
 
   await app.listen(process.env.PORT || 3000);

@@ -20,8 +20,8 @@ async function bootstrap() {
   );
 
   app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      res.header('Access-Control-Allow-Origin', req.headers.origin);
+    if (req.headers.origin === 'http://localhost:8080') {
+      res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
       res.header(
         'Access-Control-Allow-Methods',
         'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -31,7 +31,6 @@ async function bootstrap() {
         'Content-Type, Accept, Authorization',
       );
       res.header('Access-Control-Allow-Credentials', 'true');
-      return res.sendStatus(204);
     }
     next();
   });

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Event } from './entities/event';
@@ -37,21 +41,36 @@ export class EventsService {
 
     const savedEvent = await this.eventsRepository.save(event);
 
-    const completeEvent = await this.eventsRepository.findOne({
+    await this.feedRepository.save({
+      event: savedEvent,
+      createdAt: new Date(),
+    });
+
+    return this.eventsRepository.findOne({
       where: { id: savedEvent.id },
       relations: ['creator', 'participants'],
     });
+  }
 
-    if (completeEvent) {
-      console.log('Event created:', completeEvent);
-      const feedEntry = this.feedRepository.create({
-        event: completeEvent,
-        createdAt: new Date(),
-      });
-      await this.feedRepository.save(feedEntry);
+  async cancelEvent(eventId: number, userId: number): Promise<void> {
+    const event = await this.eventsRepository.findOne({
+      where: { id: eventId },
+      relations: ['creator'],
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
     }
 
-    return completeEvent;
+    if (event.creator.id !== userId) {
+      throw new UnauthorizedException(
+        'Only the event creator can cancel this event',
+      );
+    }
+
+    await this.notificationsService.cancelNotificationByEvent(eventId);
+
+    await this.eventsRepository.remove(event);
   }
 
   async getEvents(): Promise<Event[]> {

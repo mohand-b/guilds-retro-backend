@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -38,6 +39,17 @@ export class EventsController {
     }
     const creatorId = req.user.userId;
     return this.eventsService.createEvent(createEventDto, creatorId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  async cancelEvent(
+    @Param('id') eventId: number,
+    @Req() req: any,
+  ): Promise<void> {
+    const userId = req.user.userId;
+    return this.eventsService.cancelEvent(eventId, userId);
   }
 
   @Get()

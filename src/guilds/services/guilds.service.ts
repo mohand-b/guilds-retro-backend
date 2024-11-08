@@ -445,10 +445,14 @@ export class GuildsService {
     const totalEvents = events.length;
 
     const averageEventsPerWeek =
-      weeksSinceCreation > 0 ? totalEvents / weeksSinceCreation : totalEvents;
+      weeksSinceCreation > 0
+        ? Math.round(totalEvents / weeksSinceCreation)
+        : totalEvents;
 
     const averageEventsPerMonth =
-      monthsSinceCreation > 0 ? totalEvents / monthsSinceCreation : totalEvents;
+      monthsSinceCreation > 0
+        ? Math.round(totalEvents / monthsSinceCreation)
+        : totalEvents;
 
     const totalEventsByType = events.reduce(
       (acc, event) => {

@@ -13,6 +13,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
 import { FeedEntity } from '../../feed/entities/feed.entity';
+import { ReportEntity } from '../../reports/entities/report.entity';
 
 @Entity()
 export class Event {
@@ -71,4 +72,7 @@ export class Event {
 
   @OneToMany(() => Notification, (notification) => notification.event)
   notifications: Notification[];
+
+  @OneToMany(() => ReportEntity, (report) => report.event, { eager: false })
+  reports: ReportEntity[];
 }

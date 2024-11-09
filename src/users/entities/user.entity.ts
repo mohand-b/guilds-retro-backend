@@ -21,6 +21,7 @@ import { Job } from './job.entity';
 import { AccountLinkRequest } from './account-link-request.entity';
 import { AccountLinkGroup } from './account-link-group.entity';
 import { OneWordQuestionnaire } from './one-word-questionnaire.entity';
+import { ReportEntity } from '../../reports/entities/report.entity';
 
 @Entity()
 export class User {
@@ -102,4 +103,10 @@ export class User {
   })
   @JoinColumn()
   questionnaire: OneWordQuestionnaire;
+
+  @OneToMany(() => ReportEntity, (report) => report.user, { eager: false })
+  reportsAgainstUser: ReportEntity[];
+
+  @OneToMany(() => ReportEntity, (report) => report.reporter)
+  reportsAsReporter: ReportEntity[];
 }

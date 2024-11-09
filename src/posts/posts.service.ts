@@ -8,7 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { Comment } from '../comments/entities/comment.entity';
 import { PostDto } from './dto/post.dto';
 import { Like } from '../likes/entities/like.entity';
-import { FeedDto } from '../feed/entities/dto/feed.dto';
+import { FeedDto } from '../feed/dto/feed.dto';
 
 @Injectable()
 export class PostsService {

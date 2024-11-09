@@ -13,6 +13,7 @@ import { User } from '../../users/entities/user.entity';
 import { Like } from '../../likes/entities/like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
 import { FeedEntity } from '../../feed/entities/feed.entity';
+import { ReportEntity } from '../../reports/entities/report.entity';
 
 @Entity()
 export class PostEntity {
@@ -49,4 +50,7 @@ export class PostEntity {
 
   @Column({ type: 'bytea', nullable: true })
   image: Buffer;
+
+  @OneToMany(() => ReportEntity, (report) => report.post, { eager: false })
+  reports: ReportEntity[];
 }

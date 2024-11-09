@@ -18,7 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/enum/user-role.enum';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PostDto } from './dto/post.dto';
-import { FeedDto } from '../feed/entities/dto/feed.dto';
+import { FeedDto } from '../feed/dto/feed.dto';
 
 @Controller('posts')
 export class PostsController {

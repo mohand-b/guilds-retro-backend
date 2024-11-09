@@ -4,7 +4,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
-import { CreateReportDto, ReportDto } from './dto/report.dto';
+import { ReportDto } from './dto/report.dto';
+import { CreateReportDto } from './dto/create-report.dto';
 
 @Controller('reports')
 export class ReportsController {

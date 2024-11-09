@@ -10,6 +10,7 @@ import { PostEntity } from '../../posts/entities/post.entity';
 import { ReportType } from '../dto/report.dto';
 import { Event } from '../../events/entities/event';
 import { ReportStatusEnum } from '../enum/report-status.enum';
+import { ReportReasonEnum } from '../enum/report-reason.enum';
 
 @Entity()
 export class ReportEntity {
@@ -22,8 +23,11 @@ export class ReportEntity {
   @Column({ type: 'enum', enum: ['post', 'user', 'event'] })
   reportType: ReportType;
 
-  @Column({ type: 'text' })
-  reason: string;
+  @Column({ type: 'enum', enum: ReportReasonEnum, nullable: true })
+  reason: ReportReasonEnum;
+
+  @Column({ type: 'text', nullable: true })
+  reasonText: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

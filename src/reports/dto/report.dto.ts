@@ -1,25 +1,13 @@
-import { IsEnum, IsInt, IsNotEmpty } from 'class-validator';
 import { UserDto } from '../../users/dto/user.dto';
-
-export class CreateReportDto {
-  @IsInt()
-  @IsNotEmpty()
-  entityId: number;
-
-  @IsEnum(['post', 'user', 'event'])
-  @IsNotEmpty()
-  entityType: 'post' | 'user' | 'event';
-
-  @IsNotEmpty()
-  reason: string;
-}
+import { ReportReasonEnum } from '../enum/report-reason.enum';
 
 export type ReportType = 'post' | 'user' | 'event';
 
 export class ReportDto {
   id: number;
-  reportType: string;
-  reason: string;
+  reportType: ReportType;
+  reason: ReportReasonEnum;
+  reasonText: string;
   createdAt: Date;
   status: string;
   reporter: Pick<UserDto, 'id' | 'username'>;

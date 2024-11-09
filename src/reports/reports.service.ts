@@ -5,7 +5,8 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ReportEntity } from './entities/report.entity';
 import { Event } from '../events/entities/event';
-import { CreateReportDto, ReportDto } from './dto/report.dto';
+import { ReportDto } from './dto/report.dto';
+import { CreateReportDto } from './dto/create-report.dto';
 
 @Injectable()
 export class ReportsService {
@@ -24,7 +25,7 @@ export class ReportsService {
     createReportDto: CreateReportDto,
     reporterId: number,
   ): Promise<ReportDto> {
-    const { entityId, entityType, reason } = createReportDto;
+    const { entityId, entityType, reason, reasonText } = createReportDto;
 
     const reporter: Pick<User, 'id' | 'username'> =
       await this.userRepository.findOne({
@@ -39,6 +40,7 @@ export class ReportsService {
     let report = new ReportEntity();
     report.reporter = reporter;
     report.reason = reason;
+    report.reasonText = reasonText;
 
     switch (entityType) {
       case 'post':
@@ -99,6 +101,7 @@ export class ReportsService {
       id: report.id,
       reportType: report.reportType,
       reason: report.reason,
+      reasonText: report.reasonText,
       createdAt: report.createdAt,
       status: report.status,
       reporter: {

@@ -22,6 +22,7 @@ import { AccountLinkRequest } from './account-link-request.entity';
 import { AccountLinkGroup } from './account-link-group.entity';
 import { OneWordQuestionnaire } from './one-word-questionnaire.entity';
 import { ReportEntity } from '../../reports/entities/report.entity';
+import { AppRank } from '../enum/app-rank.enum';
 
 @Entity()
 export class User {
@@ -54,6 +55,13 @@ export class User {
   })
   @Expose()
   role: UserRole;
+
+  @Column({
+    type: 'enum',
+    enum: AppRank,
+    default: AppRank.USER,
+  })
+  appRank: AppRank;
 
   @Column({
     type: 'enum',

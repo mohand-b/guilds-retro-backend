@@ -79,9 +79,10 @@ export class MembershipRequestsService {
     );
     if (guildLeader) {
       await this.notificationsService.createNotification(
-        guildLeader.id,
+        [guildLeader.id],
         'membership_request',
         `${user.username} souhaite rejoindre ${guild.name}.`,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -124,12 +125,24 @@ export class MembershipRequestsService {
       request.id,
     );
 
+    await this.notificationsService.createNotification(
+      [request.user.id],
+      'notification',
+      `Ta demande d'adhésion à ${request.guild.name} a été acceptée.`,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      request.id,
+    );
+
     return request;
   }
 
   async rejectMembershipRequest(requestId: number): Promise<MembershipRequest> {
     const request = await this.membershipRequestRepository.findOne({
       where: { id: requestId },
+      relations: ['user', 'guild'],
     });
 
     if (!request) {
@@ -138,10 +151,20 @@ export class MembershipRequestsService {
 
     request.status = RequestStatus.REJECTED;
     request.updatedAt = new Date();
-
     await this.membershipRequestRepository.save(request);
 
     await this.notificationsService.cancelNotificationByMembershipRequest(
+      request.id,
+    );
+
+    await this.notificationsService.createNotification(
+      [request.user.id],
+      'notification',
+      `Ta demande d'adhésion à ${request.guild.name} a été refusée.`,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       request.id,
     );
 

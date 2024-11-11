@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/enum/user-role.enum';
+import { NotificationDto } from './dto/notification.dto';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -13,7 +14,7 @@ export class NotificationsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  getNotifications(@Req() req: any): Promise<Notification[]> {
+  getNotifications(@Req() req: any): Promise<NotificationDto[]> {
     return this.notificationsService.getNotificationsForUser(req.user.userId);
   }
 

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GuildsService } from '../guilds/services/guilds.service';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Alliance } from './entities/alliance.entity';
 import { AllianceDto, GuildAllianceRequestsDto } from './dto/alliance.dto';
 import { AllianceStatusEnum } from './enum/alliance-status.enum';
@@ -62,19 +62,30 @@ export class AlliancesService {
       status: 'PENDING',
     });
 
-    const targetGuildLeader = await this.userRepository.findOne({
-      where: { guild: { id: targetGuild.id }, role: UserRole.LEADER },
+    const savedRequest = await this.allianceRepository.save(newRequest);
+
+    const targetGuildLeadersAndOfficers = await this.userRepository.find({
+      where: {
+        guild: { id: targetGuild.id },
+        role: In([UserRole.LEADER, UserRole.OFFICER]),
+      },
     });
 
-    if (targetGuildLeader) {
+    const recipientIds: number[] = targetGuildLeadersAndOfficers.map(
+      (user) => user.id,
+    );
+
+    if (recipientIds.length > 0) {
       await this.notificationService.createNotification(
-        targetGuildLeader.id,
+        recipientIds,
         'alliance_request',
         `La guilde ${requesterGuild.name} souhaite s'allier avec ${targetGuild.name}`,
         undefined,
         undefined,
         undefined,
-        newRequest.id,
+        undefined,
+        undefined,
+        savedRequest.id,
       );
     }
 
@@ -167,6 +178,10 @@ export class AlliancesService {
       ),
     ]);
 
+    await this.notificationService.cancelNotificationByAllianceRequest(
+      allianceId,
+    );
+
     return {
       ...alliance,
       requesterGuild: this.guildsService.toGuildDto(alliance.requesterGuild),
@@ -185,6 +200,10 @@ export class AlliancesService {
 
     alliance.status = AllianceStatusEnum.REJECTED;
     await this.allianceRepository.save(alliance);
+
+    await this.notificationService.cancelNotificationByAllianceRequest(
+      allianceId,
+    );
 
     return alliance;
   }

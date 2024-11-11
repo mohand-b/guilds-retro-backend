@@ -68,8 +68,6 @@ export class EventsService {
       );
     }
 
-    await this.notificationsService.cancelNotificationByEvent(eventId);
-
     await this.eventsRepository.remove(event);
   }
 
@@ -148,11 +146,16 @@ export class EventsService {
     const savedEvent = await this.eventsRepository.save(event);
 
     await this.notificationsService.createNotification(
-      savedEvent.creator.id,
+      [savedEvent.creator.id],
       'event',
       `${user.username} a rejoint ton événement`,
       undefined,
+      undefined,
       savedEvent.id,
+      undefined,
+      undefined,
+      undefined,
+      userId,
     );
 
     return {

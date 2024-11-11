@@ -1,6 +1,6 @@
 import { User } from '../../users/entities/user.entity';
 import { Like } from '../../likes/entities/like.entity';
-import { Comment } from '../../comments/entities/comment.entity';
+import { CommentEntity } from '../../comments/entities/comment.entity';
 
 export class PostDto {
   id: number;
@@ -11,5 +11,5 @@ export class PostDto {
   image: Buffer;
   commentCount: number;
   likes?: Partial<Like>[];
-  comments?: Comment[];
+  comments?: CommentEntity[];
 }

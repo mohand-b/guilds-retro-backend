@@ -5,11 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { EventsModule } from '../events/events.module';
 import { FeedEntity } from './entities/feed.entity';
-import { Comment } from '../comments/entities/comment.entity';
+import { CommentEntity } from '../comments/entities/comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Comment, FeedEntity, User]),
+    TypeOrmModule.forFeature([CommentEntity, FeedEntity, User]),
     EventsModule,
   ],
   providers: [FeedService],

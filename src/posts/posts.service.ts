@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { FeedEntity } from '../feed/entities/feed.entity';
 import { User } from '../users/entities/user.entity';
-import { Comment } from '../comments/entities/comment.entity';
+import { CommentEntity } from '../comments/entities/comment.entity';
 import { PostDto } from './dto/post.dto';
 import { Like } from '../likes/entities/like.entity';
 import { FeedDto } from '../feed/dto/feed.dto';
@@ -19,8 +19,8 @@ export class PostsService {
     private feedRepository: Repository<FeedEntity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(Comment)
-    private commentRepository: Repository<Comment>,
+    @InjectRepository(CommentEntity)
+    private commentRepository: Repository<CommentEntity>,
   ) {}
 
   async create(createPostDto: CreatePostDto, userId: number): Promise<FeedDto> {

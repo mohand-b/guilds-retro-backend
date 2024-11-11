@@ -15,7 +15,7 @@ import { MembershipRequest } from '../../membership-requests/entities/membership
 import { Gender } from '../enum/gender.enum';
 import { PostEntity } from '../../posts/entities/post.entity';
 import { Like } from '../../likes/entities/like.entity';
-import { Comment } from '../../comments/entities/comment.entity';
+import { CommentEntity } from '../../comments/entities/comment.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
 import { Job } from './job.entity';
 import { AccountLinkRequest } from './account-link-request.entity';
@@ -79,14 +79,17 @@ export class User {
   @OneToMany(() => PostEntity, (post) => post.user)
   posts: PostEntity[];
 
-  @OneToMany(() => Comment, (comment) => comment.user)
-  comments: Comment[];
+  @OneToMany(() => CommentEntity, (comment) => comment.user)
+  comments: CommentEntity[];
 
   @OneToMany(() => Like, (like) => like.user)
   likes: Like[];
 
   @OneToMany(() => Notification, (notification) => notification.user)
   notifications: Notification[];
+
+  @OneToMany(() => Notification, (notification) => notification.emitter)
+  emittedNotifications: Notification[];
 
   @Column({ default: false })
   feedClosingToGuildAndAllies: boolean;

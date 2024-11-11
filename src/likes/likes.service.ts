@@ -51,10 +51,16 @@ export class LikesService {
 
     if (post.user.id !== userId) {
       await this.notificationsService.createNotification(
-        post.user.id,
+        [post.user.id],
         'like',
         `Ton post a été liké par ${user.username}`,
         savedLike.id,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        userId,
       );
     }
 

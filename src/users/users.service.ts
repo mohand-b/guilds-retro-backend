@@ -321,9 +321,10 @@ export class UsersService {
     const savedRequest = await this.linkRequestRepository.save(linkRequest);
 
     await this.notificationsService.createNotification(
-      targetUser.id,
+      [targetUser.id],
       'link_account',
       `${requester.username} est ton compte ?`,
+      undefined,
       undefined,
       undefined,
       savedRequest.id,
@@ -445,7 +446,7 @@ export class UsersService {
     await this.notificationsService.cancelNotificationByLinkRequest(requestId);
 
     await this.notificationsService.createNotification(
-      linkRequest.requester.id,
+      [linkRequest.requester.id],
       'link_rejected',
       `${linkRequest.targetUser.username} a refusé ta demande de liaison de compte.`,
     );

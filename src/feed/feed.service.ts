@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { FeedEntity } from './entities/feed.entity';
 import { FeedDto } from './dto/feed.dto';
-import { Comment } from '../comments/entities/comment.entity';
+import { CommentEntity } from '../comments/entities/comment.entity';
 
 @Injectable()
 export class FeedService {
@@ -13,8 +13,8 @@ export class FeedService {
     private userRepository: Repository<User>,
     @InjectRepository(FeedEntity)
     private feedRepository: Repository<FeedEntity>,
-    @InjectRepository(Comment)
-    private commentRepository: Repository<Comment>,
+    @InjectRepository(CommentEntity)
+    private commentRepository: Repository<CommentEntity>,
   ) {}
 
   async getFeed(

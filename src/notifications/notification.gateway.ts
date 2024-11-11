@@ -5,6 +5,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { NotificationDto } from './dto/notification.dto';
 
 @WebSocketGateway({
   cors: {
@@ -27,7 +28,7 @@ export class NotificationGateway
     client.leave(`user-${userId}`);
   }
 
-  notifyUser(userId: number, notification: any) {
+  notifyUser(userId: number, notification: NotificationDto) {
     this.server.to(`user-${userId}`).emit('notification', notification);
   }
 

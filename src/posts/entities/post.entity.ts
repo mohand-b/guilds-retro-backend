@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Like } from '../../likes/entities/like.entity';
-import { Comment } from '../../comments/entities/comment.entity';
+import { CommentEntity } from '../../comments/entities/comment.entity';
 import { FeedEntity } from '../../feed/entities/feed.entity';
 import { ReportEntity } from '../../reports/entities/report.entity';
 
@@ -30,11 +30,11 @@ export class PostEntity {
   @JoinColumn({ name: 'feedId' })
   feed: FeedEntity;
 
-  @OneToMany(() => Comment, (comment) => comment.post, {
+  @OneToMany(() => CommentEntity, (comment) => comment.post, {
     cascade: true,
     onDelete: 'CASCADE',
   })
-  comments: Comment[];
+  comments: CommentEntity[];
 
   @OneToMany(() => Like, (like) => like.post, {
     cascade: true,

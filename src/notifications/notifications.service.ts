@@ -220,6 +220,8 @@ export class NotificationsService {
         'emitter',
         'like',
         'like.post',
+        'comment',
+        'comment.post',
         'event',
         'accountLinkRequest',
         'membershipRequest',

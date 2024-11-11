@@ -11,6 +11,7 @@ import { MembershipRequest } from '../membership-requests/entities/membership-re
 import { Alliance } from '../alliances/entities/alliance.entity';
 import { NotificationDto } from './dto/notification.dto';
 import { CommentEntity } from '../comments/entities/comment.entity';
+import { NotificationTypeEnum } from './enum/notification-type.enum';
 
 @Injectable()
 export class NotificationsService {
@@ -143,19 +144,35 @@ export class NotificationsService {
     }
   }
 
-  async cancelNotificationByEvent(eventId: number) {
-    const notification = await this.notificationRepository.findOne({
-      where: { event: { id: eventId } },
-      relations: ['user'],
-    });
+  async cancelNotificationByEvent(
+    eventId: number,
+    specificUserId?: number,
+  ): Promise<void> {
+    const query = this.notificationRepository
+      .createQueryBuilder('notification')
+      .leftJoinAndSelect('notification.user', 'user')
+      .leftJoinAndSelect('notification.emitter', 'emitter')
+      .leftJoinAndSelect('notification.event', 'event')
+      .where('event.id = :eventId', { eventId })
+      .andWhere('notification.type = :type', {
+        type: NotificationTypeEnum.join_event,
+      });
 
-    if (notification) {
-      const notificationId = notification.id;
-      await this.notificationRepository.remove(notification);
-      this.notificationGateway.cancelNotification(
-        notification.user.id,
-        notificationId,
-      );
+    if (specificUserId) {
+      query.andWhere('emitter.id = :specificUserId', { specificUserId });
+    }
+
+    const notifications = await query.getMany();
+
+    if (notifications.length > 0) {
+      notifications.forEach((notification) => {
+        this.notificationGateway.cancelNotification(
+          notification.user.id,
+          notification.id,
+        );
+      });
+
+      await this.notificationRepository.remove(notifications);
     }
   }
 
@@ -196,18 +213,20 @@ export class NotificationsService {
   async cancelNotificationByMembershipRequest(
     requestId: number,
   ): Promise<void> {
-    const notification = await this.notificationRepository.findOne({
+    const notifications = await this.notificationRepository.find({
       where: { membershipRequest: { id: requestId } },
       relations: ['user'],
     });
 
-    if (notification) {
-      const notificationId = notification.id;
-      await this.notificationRepository.remove(notification);
-      this.notificationGateway.cancelNotification(
-        notification.user.id,
-        notificationId,
-      );
+    if (notifications.length > 0) {
+      notifications.forEach((notification) => {
+        this.notificationGateway.cancelNotification(
+          notification.user.id,
+          notification.id,
+        );
+      });
+
+      await this.notificationRepository.remove(notifications);
     }
   }
 

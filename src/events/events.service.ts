@@ -28,7 +28,15 @@ export class EventsService {
     createEventDto: CreateEventDto,
     creatorId: number,
   ): Promise<Event> {
-    const creator = await this.usersService.findOneById(creatorId);
+    const creator = await this.usersService.findOneById(creatorId, {
+      relations: [
+        'guild',
+        'guild.members',
+        'guild.allies',
+        'guild.allies.members',
+      ],
+    });
+
     if (!creator) {
       throw new NotFoundException('User not found');
     }
@@ -45,6 +53,34 @@ export class EventsService {
       event: savedEvent,
       createdAt: new Date(),
     });
+
+    const recipientIds = creator.guild.members
+      .filter((member) => member.id !== creatorId)
+      .map((member) => member.id);
+
+    if (createEventDto.isAccessibleToAllies) {
+      creator.guild.allies.forEach((allyGuild) => {
+        allyGuild.members.forEach((allyMember) => {
+          if (
+            !recipientIds.includes(allyMember.id) &&
+            allyMember.id !== creatorId
+          ) {
+            recipientIds.push(allyMember.id);
+          }
+        });
+      });
+    }
+
+    if (recipientIds.length > 0) {
+      await this.notificationsService.createNotification(
+        recipientIds,
+        'new_event',
+        `${creator.username} a créé un nouvel événement.`,
+        undefined,
+        undefined,
+        savedEvent.id,
+      );
+    }
 
     return this.eventsRepository.findOne({
       where: { id: savedEvent.id },
@@ -67,6 +103,8 @@ export class EventsService {
         'Only the event creator can cancel this event',
       );
     }
+
+    await this.notificationsService.cancelNotificationByEvent(eventId);
 
     await this.eventsRepository.remove(event);
   }
@@ -147,7 +185,7 @@ export class EventsService {
 
     await this.notificationsService.createNotification(
       [savedEvent.creator.id],
-      'event',
+      'join_event',
       `${user.username} a rejoint ton événement`,
       undefined,
       undefined,
@@ -188,7 +226,10 @@ export class EventsService {
     );
     const savedEvent = await this.eventsRepository.save(event);
 
-    await this.notificationsService.cancelNotificationByEvent(savedEvent.id);
+    await this.notificationsService.cancelNotificationByEvent(
+      savedEvent.id,
+      userId,
+    );
 
     return {
       ...savedEvent,
@@ -220,10 +261,14 @@ export class EventsService {
       .where('event.id = :eventId', { eventId })
       .andWhere(
         new Brackets((qb) => {
-          qb.where('creatorGuild.id IN (:...guildIds)', { guildIds }).orWhere(
-            'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
-            { allyGuildIds },
-          );
+          qb.where('creatorGuild.id IN (:...guildIds)', { guildIds });
+
+          if (allyGuildIds.length > 0) {
+            qb.orWhere(
+              'event.isAccessibleToAllies = true AND creatorGuild.id IN (:...allyGuildIds)',
+              { allyGuildIds },
+            );
+          }
         }),
       );
 

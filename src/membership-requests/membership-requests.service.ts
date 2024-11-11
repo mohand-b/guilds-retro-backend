@@ -74,12 +74,16 @@ export class MembershipRequestsService {
 
     await this.membershipRequestRepository.save(newRequest);
 
-    const guildLeader = guild.members.find(
-      (member) => member.role === UserRole.LEADER,
+    const guildLeadersAndOfficers = guild.members.filter(
+      (member) =>
+        member.role === UserRole.LEADER || member.role === UserRole.OFFICER,
     );
-    if (guildLeader) {
+
+    const recipientIds = guildLeadersAndOfficers.map((member) => member.id);
+
+    if (recipientIds.length > 0) {
       await this.notificationsService.createNotification(
-        [guildLeader.id],
+        recipientIds,
         'membership_request',
         `${user.username} souhaite rejoindre ${guild.name}.`,
         undefined,

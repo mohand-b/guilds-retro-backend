@@ -67,7 +67,7 @@ export class AlliancesService {
     const targetGuildLeadersAndOfficers = await this.userRepository.find({
       where: {
         guild: { id: targetGuild.id },
-        role: In([UserRole.LEADER, UserRole.OFFICER]),
+        role: In([UserRole.LEADER]),
       },
     });
 

@@ -28,13 +28,18 @@ export class EventsService {
     createEventDto: CreateEventDto,
     creatorId: number,
   ): Promise<Event> {
+    const isAccessibleToAllies =
+      typeof createEventDto.isAccessibleToAllies === 'string'
+        ? createEventDto.isAccessibleToAllies === 'true'
+        : createEventDto.isAccessibleToAllies;
+
+    const relations = ['guild', 'guild.members'];
+    if (isAccessibleToAllies === true) {
+      relations.push('guild.allies', 'guild.allies.members');
+    }
+
     const creator = await this.usersService.findOneById(creatorId, {
-      relations: [
-        'guild',
-        'guild.members',
-        'guild.allies',
-        'guild.allies.members',
-      ],
+      relations,
     });
 
     if (!creator) {
@@ -58,7 +63,7 @@ export class EventsService {
       .filter((member) => member.id !== creatorId)
       .map((member) => member.id);
 
-    if (createEventDto.isAccessibleToAllies) {
+    if (isAccessibleToAllies === true) {
       creator.guild.allies.forEach((allyGuild) => {
         allyGuild.members.forEach((allyMember) => {
           if (

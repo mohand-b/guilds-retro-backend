@@ -179,7 +179,12 @@ export class AuthService {
   }
 
   private generateToken(user: User): string {
-    const payload = { username: user.username, sub: user.id, role: user.role };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+      appRank: user.appRank,
+    };
     return this.jwtService.sign(payload);
   }
 
@@ -204,6 +209,7 @@ export class AuthService {
       guild: guildDto,
       guildAlliesIds: user.guild?.allies?.map((ally) => ally.id) || [],
       role: user.role,
+      appRank: user.appRank,
       questionnaire: user.questionnaire,
     };
   }

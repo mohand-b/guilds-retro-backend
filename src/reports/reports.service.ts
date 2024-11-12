@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ReportEntity } from './entities/report.entity';
 import { Event } from '../events/entities/event';
-import { ReportDto } from './dto/report.dto';
+import { ReportDto, ReportType } from './dto/report.dto';
 import { CreateReportDto } from './dto/create-report.dto';
 
 @Injectable()
@@ -58,6 +58,45 @@ export class ReportsService {
 
     await this.reportRepository.save(report);
     return this.toReportDto(report);
+  }
+
+  async getReports({
+    reportTypes,
+    page = 1,
+    limit = 10,
+  }: {
+    reportTypes?: ReportType[];
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: ReportDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
+
+    const query = this.reportRepository
+      .createQueryBuilder('report')
+      .leftJoinAndSelect('report.reporter', 'reporter')
+      .leftJoinAndSelect('report.post', 'post')
+      .leftJoinAndSelect('report.user', 'user')
+      .leftJoinAndSelect('report.event', 'event')
+      .orderBy('report.createdAt', 'DESC');
+
+    if (reportTypes && reportTypes.length > 0) {
+      query.andWhere('report.reportType IN (:...reportTypes)', { reportTypes });
+    }
+
+    const [data, total] = await query.skip(skip).take(take).getManyAndCount();
+
+    return {
+      data: data.map((report) => this.toReportDto(report)),
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
   }
 
   private async createPostReport(entityId: number, report: ReportEntity) {

@@ -6,9 +6,18 @@ import { ReportEntity } from './entities/report.entity';
 import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event';
 import { PostEntity } from '../posts/entities/post.entity';
+import { CommentEntity } from '../comments/entities/comment.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReportEntity, User, Event, PostEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ReportEntity,
+      User,
+      Event,
+      CommentEntity,
+      PostEntity,
+    ]),
+  ],
   providers: [ReportsService],
   controllers: [ReportsController],
   exports: [ReportsService],

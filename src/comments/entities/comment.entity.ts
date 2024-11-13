@@ -9,6 +9,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
+import { ReportEntity } from '../../reports/entities/report.entity';
 
 @Entity()
 export class CommentEntity {
@@ -32,4 +33,7 @@ export class CommentEntity {
     onDelete: 'CASCADE',
   })
   notifications: Notification[];
+
+  @OneToMany(() => ReportEntity, (report) => report.post, { eager: false })
+  reports: ReportEntity[];
 }

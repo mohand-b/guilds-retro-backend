@@ -1,14 +1,15 @@
 import { IsEnum, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import { ReportReasonEnum } from '../enum/report-reason.enum';
+import { ReportTypeEnum } from '../enum/report-type.enum';
 
 export class CreateReportDto {
   @IsInt()
   @IsNotEmpty()
   entityId: number;
 
-  @IsEnum(['post', 'user', 'event'])
+  @IsEnum(ReportTypeEnum)
   @IsNotEmpty()
-  entityType: 'post' | 'user' | 'event';
+  entityType: ReportTypeEnum;
 
   @IsEnum(ReportReasonEnum)
   @IsNotEmpty()

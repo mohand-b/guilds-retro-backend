@@ -7,10 +7,11 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { PostEntity } from '../../posts/entities/post.entity';
-import { ReportType } from '../dto/report.dto';
 import { Event } from '../../events/entities/event';
 import { ReportStatusEnum } from '../enum/report-status.enum';
 import { ReportReasonEnum } from '../enum/report-reason.enum';
+import { CommentEntity } from '../../comments/entities/comment.entity';
+import { ReportTypeEnum } from '../enum/report-type.enum';
 
 @Entity()
 export class ReportEntity {
@@ -20,8 +21,8 @@ export class ReportEntity {
   @ManyToOne(() => User, (user) => user.posts)
   reporter: Pick<User, 'id' | 'username'>;
 
-  @Column({ type: 'enum', enum: ['post', 'user', 'event'] })
-  reportType: ReportType;
+  @Column({ type: 'enum', enum: ReportTypeEnum })
+  reportType: ReportTypeEnum;
 
   @Column({ type: 'enum', enum: ReportReasonEnum, nullable: true })
   reason: ReportReasonEnum;
@@ -47,4 +48,7 @@ export class ReportEntity {
 
   @ManyToOne(() => Event, { nullable: true, onDelete: 'CASCADE' })
   event?: Event;
+
+  @ManyToOne(() => CommentEntity, { nullable: true, onDelete: 'CASCADE' })
+  comment?: CommentEntity;
 }

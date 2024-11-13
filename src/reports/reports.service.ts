@@ -5,14 +5,18 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ReportEntity } from './entities/report.entity';
 import { Event } from '../events/entities/event';
-import { ReportDto, ReportType } from './dto/report.dto';
+import { ReportDto } from './dto/report.dto';
 import { CreateReportDto } from './dto/create-report.dto';
+import { CommentEntity } from '../comments/entities/comment.entity';
+import { ReportTypeEnum } from './enum/report-type.enum';
 
 @Injectable()
 export class ReportsService {
   constructor(
     @InjectRepository(PostEntity)
     private postRepository: Repository<PostEntity>,
+    @InjectRepository(CommentEntity)
+    private commentRepository: Repository<CommentEntity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(ReportEntity)
@@ -43,14 +47,17 @@ export class ReportsService {
     report.reasonText = reasonText;
 
     switch (entityType) {
-      case 'post':
+      case ReportTypeEnum.POST:
         report = await this.createPostReport(entityId, report);
         break;
-      case 'user':
+      case ReportTypeEnum.USER:
         report = await this.createUserReport(entityId, report);
         break;
-      case 'event':
+      case ReportTypeEnum.EVENT:
         report = await this.createEventReport(entityId, report);
+        break;
+      case ReportTypeEnum.COMMENT:
+        report = await this.createCommentReport(entityId, report);
         break;
       default:
         throw new Error('Unsupported entity type for reporting');
@@ -65,7 +72,7 @@ export class ReportsService {
     page = 1,
     limit = 10,
   }: {
-    reportTypes?: ReportType[];
+    reportTypes?: ReportTypeEnum[];
     page?: number;
     limit?: number;
   }): Promise<{
@@ -108,7 +115,20 @@ export class ReportsService {
       throw new NotFoundException('Post not found');
     }
     report.post = post;
-    report.reportType = 'post';
+    report.reportType = ReportTypeEnum.POST;
+    return report;
+  }
+
+  private async createCommentReport(entityId: number, report: ReportEntity) {
+    const comment = await this.commentRepository.findOne({
+      where: { id: entityId },
+      relations: ['user'],
+    });
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    report.comment = comment;
+    report.reportType = ReportTypeEnum.COMMENT;
     return report;
   }
 
@@ -118,7 +138,7 @@ export class ReportsService {
       throw new NotFoundException('User not found');
     }
     report.user = user;
-    report.reportType = 'user';
+    report.reportType = ReportTypeEnum.USER;
     return report;
   }
 
@@ -131,7 +151,7 @@ export class ReportsService {
       throw new NotFoundException('Event not found');
     }
     report.event = event;
-    report.reportType = 'event';
+    report.reportType = ReportTypeEnum.EVENT;
     return report;
   }
 

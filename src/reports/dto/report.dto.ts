@@ -1,11 +1,10 @@
 import { UserDto } from '../../users/dto/user.dto';
 import { ReportReasonEnum } from '../enum/report-reason.enum';
-
-export type ReportType = 'post' | 'user' | 'event';
+import { ReportTypeEnum } from '../enum/report-type.enum';
 
 export class ReportDto {
   id: number;
-  reportType: ReportType;
+  reportType: ReportTypeEnum;
   reason: ReportReasonEnum;
   reasonText: string;
   createdAt: Date;

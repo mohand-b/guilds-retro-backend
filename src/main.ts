@@ -23,6 +23,7 @@ async function bootstrap() {
     'http://localhost:4200',
     'http://localhost:8080',
     'https://guilds-boune.fr',
+    'https://www.guilds-boune.fr',
   ];
 
   app.enableCors({

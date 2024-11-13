@@ -19,28 +19,22 @@ async function bootstrap() {
     }),
   );
 
-  app.use((req, res, next) => {
-    if (req.headers.origin === 'http://localhost:8080') {
-      res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
-      res.header(
-        'Access-Control-Allow-Methods',
-        'GET,HEAD,PUT,PATCH,POST,DELETE',
-      );
-      res.header(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Accept, Authorization',
-      );
-      res.header('Access-Control-Allow-Credentials', 'true');
-    }
-    next();
-  });
+  const allowedOrigins = [
+    'http://localhost:4200',
+    'http://localhost:8080',
+    'https://guilds-boune.fr',
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {
-      callback(null, true);
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
     credentials: true,
   });
 

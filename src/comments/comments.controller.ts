@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -27,13 +28,20 @@ export class CommentsController {
     return this.commentsService.create(createCommentDto, req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':postId')
+  @UseGuards(JwtAuthGuard)
   async getPaginatedComments(
     @Param('postId') postId: number,
-    @Query('page') page = 1,
+    @Query('cursor') cursor?: number,
     @Query('limit') limit = 3,
   ): Promise<PaginatedCommentsDto> {
-    return this.commentsService.getPaginatedComments(postId, page, limit);
+    return this.commentsService.getPaginatedComments(postId, cursor, limit);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MEMBER)
+  async deleteComment(@Param('id') id: number, @Req() req: any) {
+    return this.commentsService.delete(id, req.user.userId, req.user.appRank);
   }
 }

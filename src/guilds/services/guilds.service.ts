@@ -431,6 +431,7 @@ export class GuildsService {
     const events = await this.eventRepository
       .createQueryBuilder('event')
       .where('event.creatorId IN (:...memberIds)', { memberIds })
+      .andWhere('event.date <= :currentDate', { currentDate: new Date() })
       .getMany();
 
     const weeksSinceCreation = differenceInWeeks(

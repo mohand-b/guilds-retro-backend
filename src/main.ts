@@ -29,6 +29,17 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use((req, res, next) => {
+    res.header(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    res.header('Surrogate-Control', 'no-store');
+    next();
+  });
+
   await app.listen(process.env.PORT || 3000);
 }
 

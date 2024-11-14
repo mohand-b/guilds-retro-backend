@@ -19,26 +19,15 @@ async function bootstrap() {
     }),
   );
 
-  const allowedOrigins = [
-    'http://localhost:4200',
-    'http://localhost:8080',
-    'https://guilds-boune.fr',
-    'https://www.guilds-boune.fr',
-  ];
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+  const accessPolicy = process.env.ACCESS_POLICY || 'restrictive';
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: accessPolicy === 'open' ? true : allowedOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
     credentials: true,
   });
-
   await app.listen(process.env.PORT || 3000);
 }
 

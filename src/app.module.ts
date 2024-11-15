@@ -20,19 +20,20 @@ import { ReportsModule } from './reports/reports.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: './environments/.env',
+      envFilePath: `./environments/.env.${process.env.NODE_ENV || 'development'}`,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.get<string>('DATABASE_URL'),
-        synchronize: true,
-        autoLoadEntities: true,
-        ssl: {
-          rejectUnauthorized: false,
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const isProduction = config.get<string>('NODE_ENV') === 'production';
+        return {
+          type: 'postgres',
+          url: config.get<string>('DATABASE_URL'),
+          synchronize: true,
+          autoLoadEntities: true,
+          ssl: isProduction && { rejectUnauthorized: false },
+        };
+      },
       inject: [ConfigService],
     }),
     GuildsModule,

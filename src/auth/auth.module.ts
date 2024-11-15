@@ -21,9 +21,13 @@ import { User } from '../users/entities/user.entity';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secretKey = configService.get<string>('JWT_SECRET');
+        return {
+          secret: secretKey,
+          signOptions: { expiresIn: '1h' },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

@@ -90,16 +90,16 @@ export class PostsService {
 
   async findOneById(id: number): Promise<PostDto> {
     const post = await this.postRepository.findOne({
-      where: { id },
+      where: { id, archived: false },
       relations: ['user', 'user.guild', 'likes', 'likes.user'],
     });
 
-    if (!post) {
+    if (!post || post.archived) {
       throw new NotFoundException('Post not found');
     }
 
     const commentCount = await this.commentRepository.count({
-      where: { post: { id: post.id } },
+      where: { post: { id: post.id }, archived: false },
     });
 
     return {
@@ -136,7 +136,7 @@ export class PostsService {
   ): Promise<PostEntity[]> {
     if (targetUserId === requestingUserId) {
       return this.postRepository.find({
-        where: { user: { id: targetUserId } },
+        where: { user: { id: targetUserId }, archived: false },
         order: { createdAt: 'DESC' },
         take: 5,
       });
@@ -164,7 +164,7 @@ export class PostsService {
     }
 
     return this.postRepository.find({
-      where: { user: { id: targetUserId } },
+      where: { user: { id: targetUserId }, archived: false },
       order: { createdAt: 'DESC' },
       take: 5,
     });

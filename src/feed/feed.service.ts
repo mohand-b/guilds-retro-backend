@@ -41,7 +41,7 @@ export class FeedService {
       ...user.guild.allies.map((guild) => guild.id),
     ];
 
-    let query = this.feedRepository
+    const query = this.feedRepository
       .createQueryBuilder('feed')
       .leftJoinAndSelect('feed.post', 'post')
       .leftJoinAndSelect('feed.event', 'event')
@@ -52,23 +52,21 @@ export class FeedService {
       .leftJoinAndSelect('event.creator', 'eventCreator')
       .leftJoinAndSelect('event.participants', 'participants')
       .leftJoinAndSelect('eventCreator.guild', 'eventCreatorGuild')
-      .orderBy('feed.createdAt', 'DESC');
-
-    if (user.feedClosingToGuildAndAllies) {
-      query = query.where('postUserGuild.id IN (:...guildIds)', { guildIds });
-    } else {
-      query = query.where(
-        '(postUserGuild.id IN (:...guildIds) OR ' +
-          '(postUserGuild.id NOT IN (:...guildIds) AND postUser.feedClosingToGuildAndAllies = false))',
+      .where('(post.archived = false OR post.id IS NULL)')
+      .andWhere('(event.archived = false OR event.id IS NULL)')
+      .andWhere(
+        user.feedClosingToGuildAndAllies
+          ? 'postUserGuild.id IN (:...guildIds)'
+          : '(postUserGuild.id IN (:...guildIds) OR ' +
+              '(postUserGuild.id NOT IN (:...guildIds) AND postUser.feedClosingToGuildAndAllies = false))',
         { guildIds },
-      );
-    }
-
-    query = query.orWhere(
-      '(eventCreatorGuild.id IN (:...guildIds) AND event.isAccessibleToAllies = true) ' +
-        'OR (eventCreatorGuild.id = :userGuildId)',
-      { guildIds, userGuildId: user.guild.id },
-    );
+      )
+      .orWhere(
+        '(eventCreatorGuild.id IN (:...guildIds) AND event.isAccessibleToAllies = true) ' +
+          'OR (eventCreatorGuild.id = :userGuildId)',
+        { guildIds, userGuildId: user.guild.id },
+      )
+      .orderBy('feed.createdAt', 'DESC');
 
     const [allResults, total] = await query.getManyAndCount();
     const paginatedResults: FeedEntity[] = allResults.slice(
@@ -88,6 +86,7 @@ export class FeedService {
         .select('comment.postId', 'postId')
         .addSelect('COUNT(comment.id)', 'count')
         .where('comment.postId IN (:...postIds)', { postIds })
+        .andWhere('comment.archived = false')
         .groupBy('comment.postId')
         .getRawMany();
 

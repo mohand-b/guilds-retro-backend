@@ -84,7 +84,7 @@ export class CommentsService {
     limit = 3,
   ): Promise<PaginatedCommentsDto> {
     const allComments = await this.commentRepository.find({
-      where: { post: { id: postId } },
+      where: { post: { id: postId }, archived: false },
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });

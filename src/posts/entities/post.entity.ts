@@ -53,4 +53,7 @@ export class PostEntity {
 
   @OneToMany(() => ReportEntity, (report) => report.post, { eager: false })
   reports: ReportEntity[];
+
+  @Column({ default: false })
+  archived: boolean;
 }

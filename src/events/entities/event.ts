@@ -75,4 +75,7 @@ export class Event {
 
   @OneToMany(() => ReportEntity, (report) => report.event, { eager: false })
   reports: ReportEntity[];
+
+  @Column({ default: false })
+  archived: boolean;
 }

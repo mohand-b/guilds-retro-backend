@@ -7,6 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event';
 import { PostEntity } from '../posts/entities/post.entity';
 import { CommentEntity } from '../comments/entities/comment.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CommentEntity } from '../comments/entities/comment.entity';
       CommentEntity,
       PostEntity,
     ]),
+    NotificationsModule,
   ],
   providers: [ReportsService],
   controllers: [ReportsController],

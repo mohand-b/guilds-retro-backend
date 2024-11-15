@@ -12,6 +12,7 @@ import { ReportStatusEnum } from '../enum/report-status.enum';
 import { ReportReasonEnum } from '../enum/report-reason.enum';
 import { CommentEntity } from '../../comments/entities/comment.entity';
 import { ReportTypeEnum } from '../enum/report-type.enum';
+import { ReportDecisionEnum } from '../enum/report-decision.enum';
 
 @Entity()
 export class ReportEntity {
@@ -40,15 +41,23 @@ export class ReportEntity {
   })
   status: ReportStatusEnum;
 
-  @ManyToOne(() => PostEntity, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => PostEntity, { nullable: true, onDelete: 'SET NULL' })
   post?: PostEntity;
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => CommentEntity, { nullable: true, onDelete: 'SET NULL' })
+  comment?: CommentEntity;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   user?: User;
 
-  @ManyToOne(() => Event, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Event, { nullable: true, onDelete: 'SET NULL' })
   event?: Event;
+  @Column({ type: 'timestamptz', nullable: true })
+  resolvedAt?: Date;
 
-  @ManyToOne(() => CommentEntity, { nullable: true, onDelete: 'CASCADE' })
-  comment?: CommentEntity;
+  @ManyToOne(() => User, { nullable: true })
+  resolvedBy?: Pick<User, 'id' | 'username'>;
+
+  @Column({ type: 'enum', enum: ReportDecisionEnum, nullable: true })
+  decision?: ReportDecisionEnum;
 }

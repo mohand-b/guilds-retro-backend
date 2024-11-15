@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,6 +20,7 @@ import { ReportTypeEnum } from './enum/report-type.enum';
 import { RanksGuard } from '../auth/guards/ranks.guard';
 import { AppRank } from '../users/enum/app-rank.enum';
 import { Ranks } from '../common/decorators/ranks.decorator';
+import { ReportDecisionEnum } from './enum/report-decision.enum';
 
 @Controller('reports')
 export class ReportsController {
@@ -48,5 +51,17 @@ export class ReportsController {
     limit: number;
   }> {
     return this.reportsService.getReports({ reportTypes, page, limit });
+  }
+
+  @Patch(':id/resolve')
+  @UseGuards(JwtAuthGuard, RanksGuard)
+  @Ranks(AppRank.MODERATOR)
+  async resolveReport(
+    @Param('id') reportId: number,
+    @Body('decision') decision: ReportDecisionEnum,
+    @Req() req: any,
+  ): Promise<ReportDto> {
+    const userId = req.user.userId;
+    return this.reportsService.resolveReport(reportId, userId, decision);
   }
 }

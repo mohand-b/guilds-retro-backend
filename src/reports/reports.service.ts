@@ -9,6 +9,9 @@ import { ReportDto } from './dto/report.dto';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CommentEntity } from '../comments/entities/comment.entity';
 import { ReportTypeEnum } from './enum/report-type.enum';
+import { ReportStatusEnum } from './enum/report-status.enum';
+import { ReportDecisionEnum } from './enum/report-decision.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReportsService {
@@ -23,6 +26,7 @@ export class ReportsService {
     private reportRepository: Repository<ReportEntity>,
     @InjectRepository(Event)
     private eventRepository: Repository<Event>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createReport(
@@ -84,26 +88,175 @@ export class ReportsService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
+    const reportTypesArray = Array.isArray(reportTypes)
+      ? reportTypes
+      : reportTypes
+        ? [reportTypes]
+        : [];
+
     const query = this.reportRepository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.reporter', 'reporter')
       .leftJoinAndSelect('report.post', 'post')
       .leftJoinAndSelect('report.user', 'user')
       .leftJoinAndSelect('report.event', 'event')
+      .leftJoinAndSelect('report.comment', 'comment')
+      .leftJoinAndSelect('report.resolvedBy', 'resolvedBy')
       .orderBy('report.createdAt', 'DESC');
 
-    if (reportTypes && reportTypes.length > 0) {
-      query.andWhere('report.reportType IN (:...reportTypes)', { reportTypes });
+    if (reportTypesArray.length > 0) {
+      query.andWhere('report.reportType IN (:...reportTypes)', {
+        reportTypes: reportTypesArray,
+      });
     }
 
-    const [data, total] = await query.skip(skip).take(take).getManyAndCount();
+    const [data, total] = await query.getManyAndCount();
+
+    const sortedData = data.sort((a, b) => {
+      if (
+        a.status === ReportStatusEnum.PENDING &&
+        b.status !== ReportStatusEnum.PENDING
+      ) {
+        return -1;
+      }
+      if (
+        a.status !== ReportStatusEnum.PENDING &&
+        b.status === ReportStatusEnum.PENDING
+      ) {
+        return 1;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    const paginatedData = sortedData.slice(skip, skip + take);
 
     return {
-      data: data.map((report) => this.toReportDto(report)),
+      data: paginatedData.map((report) => this.toReportDto(report)),
       total,
       page: Number(page),
       limit: Number(limit),
     };
+  }
+
+  async resolveReport(
+    reportId: number,
+    userId: number,
+    decision: ReportDecisionEnum,
+  ): Promise<ReportDto> {
+    const report = await this.reportRepository.findOne({
+      where: { id: reportId },
+      relations: [
+        'post',
+        'post.user',
+        'comment',
+        'comment.user',
+        'reporter',
+        'resolvedBy',
+      ],
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const resolvedBy = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username'],
+    });
+
+    if (!resolvedBy) {
+      throw new NotFoundException('User resolving the report not found');
+    }
+
+    let relatedEntity: any,
+      notificationType: string,
+      deletionMessage: string,
+      relatedReports: ReportEntity[];
+
+    switch (report.reportType) {
+      case ReportTypeEnum.POST:
+        relatedEntity = report.post;
+        notificationType = 'post_deleted';
+        deletionMessage =
+          "Ton post a été supprimé car il ne respecte pas les conditions d'utilisation";
+        relatedReports = await this.reportRepository.find({
+          where: { post: { id: relatedEntity?.id } },
+          relations: ['reporter'],
+        });
+        break;
+      case ReportTypeEnum.COMMENT:
+        relatedEntity = report.comment;
+        notificationType = 'comment_deleted';
+        deletionMessage =
+          "Ton commentaire a été supprimé car il ne respecte pas les conditions d'utilisation";
+        relatedReports = await this.reportRepository.find({
+          where: { comment: { id: relatedEntity?.id } },
+          relations: ['reporter'],
+        });
+        break;
+      default:
+        throw new Error('Unsupported report type');
+    }
+
+    if (
+      decision === ReportDecisionEnum.OBJECT_DELETED &&
+      relatedEntity &&
+      !relatedEntity.archived
+    ) {
+      relatedEntity.archived = true;
+      await this[`${report.reportType as string}Repository`].save(
+        relatedEntity,
+      );
+
+      await this.notificationsService.createNotification(
+        [relatedEntity.user.id],
+        notificationType,
+        deletionMessage,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        userId,
+      );
+    }
+
+    for (const relatedReport of relatedReports) {
+      relatedReport.status = ReportStatusEnum.PROCESSED;
+      relatedReport.resolvedAt = new Date();
+      relatedReport.resolvedBy = resolvedBy;
+      relatedReport.decision = decision;
+    }
+
+    await this.reportRepository.save(relatedReports);
+
+    const updatedReport = await this.reportRepository.findOne({
+      where: { id: reportId },
+      relations: [
+        'post',
+        'post.user',
+        'comment',
+        'comment.user',
+        'reporter',
+        'resolvedBy',
+      ],
+    });
+
+    await this.notificationsService.createNotification(
+      [report.reporter.id],
+      'report_processed',
+      `Ton signalement pour le ${report.reportType.toLowerCase()} a été traité`,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      userId,
+    );
+
+    return this.toReportDto(updatedReport);
   }
 
   private async createPostReport(entityId: number, report: ReportEntity) {
@@ -170,6 +323,13 @@ export class ReportsService {
       event: report.event,
       post: report.post,
       user: report.user,
+      comment: report.comment,
+      resolvedAt: report.resolvedAt,
+      resolvedBy: {
+        id: report.resolvedBy?.id,
+        username: report.resolvedBy?.username,
+      },
+      decision: report.decision,
     };
   }
 }

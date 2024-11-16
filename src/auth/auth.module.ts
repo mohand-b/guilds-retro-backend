@@ -25,7 +25,7 @@ import { User } from '../users/entities/user.entity';
         const secretKey = configService.get<string>('JWT_SECRET');
         return {
           secret: secretKey,
-          signOptions: { expiresIn: '1h' },
+          signOptions: { expiresIn: '3d' },
         };
       },
       inject: [ConfigService],

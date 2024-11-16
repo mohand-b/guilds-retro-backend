@@ -49,6 +49,7 @@ export class EventsService {
     const event = this.eventsRepository.create({
       ...createEventDto,
       creator,
+      isAccessibleToAllies,
       participants: [creator],
     });
 
